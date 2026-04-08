@@ -5,8 +5,6 @@ const PROJECT_ID     = "gathering-risom";
 const API_KEY        = "AIzaSyB19EhfnPWGoMeTAHmsdNtJnaJ81U8RjkM";
 const STORAGE_BUCKET = "gathering-risom.firebasestorage.app";
 const BASE           = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
-
-// ─── ADMIN PASSWORD ───────────────────────────────────────────────────────────
 const ADMIN_PASSWORD = "gathering2025";
 
 // ─── IMAGE COMPRESSION ────────────────────────────────────────────────────────
@@ -34,7 +32,7 @@ async function uploadToStorage(blob, postId) {
   return `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o/photos%2F${postId}.jpg?alt=media&key=${API_KEY}`;
 }
 
-// ─── FIRESTORE HELPERS ────────────────────────────────────────────────────────
+// ─── FIRESTORE ────────────────────────────────────────────────────────────────
 function toFS(obj) {
   const out = {};
   for (const [k,v] of Object.entries(obj)) {
@@ -59,29 +57,26 @@ function fromFS(fields={}) {
 async function fsGet(path) {
   const r=await fetch(`${BASE}/${path}?key=${API_KEY}`);
   if (!r.ok) return null;
-  const d=await r.json();
-  return fromFS(d.fields||{});
+  return fromFS((await r.json()).fields||{});
 }
 async function fsPatch(path,data) {
   const fields=toFS(data);
   const mask=Object.keys(fields).map(k=>`updateMask.fieldPaths=${k}`).join("&");
   await fetch(`${BASE}/${path}?${mask}&key=${API_KEY}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields})});
 }
-async function fsAdd(collection,data) {
-  const r=await fetch(`${BASE}/${collection}?key=${API_KEY}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFS(data)})});
-  const d=await r.json();
-  return d.name?.split("/").pop();
+async function fsAdd(col,data) {
+  const r=await fetch(`${BASE}/${col}?key=${API_KEY}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFS(data)})});
+  return (await r.json()).name?.split("/").pop();
 }
-async function fsList(collection) {
-  const r=await fetch(`${BASE}/${collection}?pageSize=200&key=${API_KEY}`);
-  const d=await r.json();
-  return (d.documents||[]).map(doc=>({id:doc.name.split("/").pop(),...fromFS(doc.fields||{})}));
+async function fsList(col) {
+  const r=await fetch(`${BASE}/${col}?pageSize=200&key=${API_KEY}`);
+  return ((await r.json()).documents||[]).map(d=>({id:d.name.split("/").pop(),...fromFS(d.fields||{})}));
 }
 
 // ─── DB ───────────────────────────────────────────────────────────────────────
 const DB = {
-  async getUser(u)    { return fsGet(`users/${u}`); },
-  async setUser(u,d)  { return fsPatch(`users/${u}`,d); },
+  async getUser(u)   { return fsGet(`users/${u}`); },
+  async setUser(u,d) { return fsPatch(`users/${u}`,d); },
   async addPost(d) {
     const {photoURL,photoFile,...rest}=d;
     const postId=Date.now().toString();
@@ -93,29 +88,31 @@ const DB = {
     await fsAdd("posts",{...rest,photoURL:storedPhotoURL,id:postId});
     return postId;
   },
-  async getPosts()    { return fsList("posts"); },
-  async getAllUsers()  { const docs=await fsList("users"); return docs.map(d=>({username:d.id,...d})); },
+  async getPosts()   { return fsList("posts"); },
+  async getAllUsers() { return (await fsList("users")).map(d=>({username:d.id,...d})); },
 };
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const DIMS=[
-  {id:"agency",    emoji:"✊",label:"Agency",    lo:"This place owns me",hi:"I own this place",color:"#7c6fcd",track:"#ede9fe"},
-  {id:"connection",emoji:"🤝",label:"Connection",lo:"Total outsider",    hi:"I belong here",   color:"#4a9ead",track:"#e0f2fe"},
-  {id:"competence",emoji:"🧭",label:"Competence",lo:"Totally lost",      hi:"I've got this",   color:"#5a9e7c",track:"#d1fae5"},
+const DIMS = [
+  { id:"agency",     label:"Agency",     question:"How much control do you feel in this space?", lo:"I feel unsure and out of control", hi:"I feel empowered and in control", color:"#7c6fcd", track:"#ede9fe" },
+  { id:"competence", label:"Competence", question:"How confident do you feel here?",              lo:"I feel out of my depth",           hi:"I feel completely at ease",        color:"#4a9ead", track:"#e0f2fe" },
+  { id:"connection", label:"Connection", question:"Does this place feel like it's for you?",      lo:"This place wasn't made for me",    hi:"I feel like I belong here",        color:"#5a9e7c", track:"#d1fae5" },
 ];
-const HOUSING    =["Homestay","Kollegium","Shared apartment","Other"];
-const HOME_SCALE =[{v:1,emoji:"😟",label:"Not at all"},{v:2,emoji:"😕",label:"Not really"},{v:3,emoji:"😐",label:"Somewhat"},{v:4,emoji:"😊",label:"Mostly"},{v:5,emoji:"🥰",label:"Very much"}];
-const EMOJIS     =["😩","😕","😐","😊","🤩"];
-const HOME_LABELS=["","Not at all","Not really","Somewhat","Mostly","Very much"];
-
-// ─── PALETTE ──────────────────────────────────────────────────────────────────
-const C={bg:"#f5f2ee",dark:"#1c1c1e",mid:"#6b6660",light:"#e8e3dc",accent:"#7c6fcd",accent2:"#c97d4e",white:"#ffffff"};
+const HOUSING     = ["Homestay","Kollegium","Shared apartment","Other"];
+const HOME_SCALE  = [{v:1,emoji:"😟",label:"Not at all"},{v:2,emoji:"😕",label:"Not really"},{v:3,emoji:"😐",label:"Somewhat"},{v:4,emoji:"😊",label:"Mostly"},{v:5,emoji:"🥰",label:"Very much"}];
+const EMOJIS      = ["😩","😕","😐","😊","🤩"];
+const HOME_LABELS = ["","Not at all","Not really","Somewhat","Mostly","Very much"];
+const C = { bg:"#f5f2ee", dark:"#1c1c1e", mid:"#6b6660", light:"#e8e3dc", accent:"#7c6fcd", accent2:"#c97d4e", white:"#ffffff" };
 
 // ─── SHARED UI ────────────────────────────────────────────────────────────────
-function Screen({children,bg=C.bg}){
-  return <div style={{minHeight:"100vh",background:bg,display:"flex",flexDirection:"column",alignItems:"center"}}><div style={{width:"100%",maxWidth:480}}>{children}</div></div>;
+function Screen({children,bg=C.bg}) {
+  return(
+    <div style={{minHeight:"100vh",background:bg,display:"flex",flexDirection:"column",alignItems:"center",WebkitTextSizeAdjust:"100%"}}>
+      <div style={{width:"100%",maxWidth:480,boxSizing:"border-box"}}>{children}</div>
+    </div>
+  );
 }
-function Header({title,sub,onBack,right}){
+function Header({title,sub,onBack,right}) {
   return(
     <div style={{background:C.dark,color:C.white,padding:"16px 20px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:10}}>
       {onBack&&<button onClick={onBack} style={{background:"none",border:"none",color:"#94a3b8",fontSize:22,cursor:"pointer",padding:0}}>←</button>}
@@ -127,31 +124,40 @@ function Header({title,sub,onBack,right}){
     </div>
   );
 }
-function Btn({label,onClick,color=C.accent,disabled,outline,small}){
-  return <button onClick={onClick} disabled={disabled} style={{width:"100%",padding:small?"10px":"15px",borderRadius:12,fontWeight:600,fontSize:small?13:16,cursor:disabled?"not-allowed":"pointer",background:disabled?"#e2e8f0":outline?C.white:color,color:disabled?"#94a3b8":outline?color:C.white,border:outline?`2px solid ${color}`:"none",transition:"all .15s"}}>{label}</button>;
+function Btn({label,onClick,color=C.accent,disabled,outline}) {
+  return <button onClick={onClick} disabled={disabled} style={{width:"100%",padding:"15px",borderRadius:12,fontWeight:600,fontSize:16,cursor:disabled?"not-allowed":"pointer",background:disabled?"#e2e8f0":outline?C.white:color,color:disabled?"#94a3b8":outline?color:C.white,border:outline?`2px solid ${color}`:"none",transition:"all .15s"}}>{label}</button>;
 }
-function Card({children,style={}}){
-  return <div style={{background:C.white,borderRadius:16,padding:"20px",border:`1px solid ${C.light}`,...style}}>{children}</div>;
+function Card({children,style={}}) {
+  return <div style={{background:C.white,borderRadius:14,padding:"14px 16px",border:`1px solid ${C.light}`,...style}}>{children}</div>;
 }
-function SectionLabel({children}){
+function SLabel({children}) {
   return <div style={{fontSize:11,fontWeight:600,color:C.mid,letterSpacing:1.2,marginBottom:10,textTransform:"uppercase"}}>{children}</div>;
 }
-function VibeSlider({dim,value,onChange}){
+function TextInput({value,onChange,placeholder}) {
+  return <input value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+    style={{width:"100%",padding:"11px 13px",borderRadius:10,border:`2px solid ${C.light}`,fontSize:15,boxSizing:"border-box",outline:"none",background:C.bg}}/>;
+}
+function VibeSlider({dim,value,onChange}) {
   return(
-    <Card style={{marginBottom:12}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-        <span style={{fontWeight:600,fontSize:15,color:C.dark}}>{dim.label}</span>
-        <span style={{marginLeft:"auto",fontSize:24}}>{EMOJIS[value-1]}</span>
+    <Card style={{marginBottom:10,padding:"14px 16px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+        <span style={{fontWeight:600,fontSize:14,color:C.dark}}>{dim.label}</span>
+        <span style={{marginLeft:"auto",fontSize:28}}>{EMOJIS[value-1]}</span>
       </div>
-      <input type="range" min={1} max={5} value={value} onChange={e=>onChange(Number(e.target.value))} style={{width:"100%",accentColor:dim.color,cursor:"pointer"}}/>
-      <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
-        <span style={{fontSize:11,color:C.mid,maxWidth:"42%",lineHeight:1.3}}>{dim.lo}</span>
-        <span style={{fontSize:11,color:C.mid,maxWidth:"42%",textAlign:"right",lineHeight:1.3}}>{dim.hi}</span>
+      <p style={{fontSize:12,color:C.mid,margin:"0 0 10px",lineHeight:1.4}}>{dim.question}</p>
+      {/* larger touch target for slider */}
+      <div style={{padding:"8px 0"}}>
+        <input type="range" min={1} max={5} value={value} onChange={e=>onChange(Number(e.target.value))}
+          style={{width:"100%",accentColor:dim.color,cursor:"pointer",height:28,WebkitAppearance:"none",appearance:"none"}}/>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
+        <span style={{fontSize:11,color:C.mid,maxWidth:"44%",lineHeight:1.3}}>{dim.lo}</span>
+        <span style={{fontSize:11,color:C.mid,maxWidth:"44%",textAlign:"right",lineHeight:1.3}}>{dim.hi}</span>
       </div>
     </Card>
   );
 }
-function useGPS(){
+function useGPS() {
   const [pos,setPos]=useState(null);
   useEffect(()=>{
     if (!navigator.geolocation) return;
@@ -159,22 +165,23 @@ function useGPS(){
   },[]);
   return pos;
 }
-function PostMap({posts}){
+function PostMap({posts}) {
   const id=useRef("map-"+Math.random().toString(36).slice(2));
   const instance=useRef(null);
   useEffect(()=>{
-    const geoPosts=posts.filter(p=>p.lat&&p.lng);
-    if (!geoPosts.length) return;
+    const geo=posts.filter(p=>p.lat&&p.lng);
+    if (!geo.length) return;
     const init=()=>{
       if (instance.current){instance.current.remove();instance.current=null;}
       const L=window.L; if (!L) return;
       const map=L.map(id.current).setView([55.676,12.568],13);
       instance.current=map;
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);
-      geoPosts.forEach(p=>{
+      geo.forEach(p=>{
         const avg=Math.round((p.scores.agency+p.scores.connection+p.scores.competence)/3);
         const cols=["#ef4444","#f97316","#eab308","#22c55e","#7c6fcd"];
-        L.circleMarker([p.lat,p.lng],{radius:10,fillColor:cols[avg-1]||"#7c6fcd",color:"#fff",weight:2,fillOpacity:0.9}).addTo(map).bindPopup(`<b>@${p.user}</b><br>Agency:${p.scores.agency}/5<br>Connection:${p.scores.connection}/5<br>Competence:${p.scores.competence}/5${p.note?`<br><i>${p.note}</i>`:""}`);
+        L.circleMarker([p.lat,p.lng],{radius:10,fillColor:cols[avg-1]||"#7c6fcd",color:"#fff",weight:2,fillOpacity:0.9}).addTo(map)
+          .bindPopup(`<b>@${p.user}</b><br>Agency:${p.scores.agency}/5<br>Connection:${p.scores.connection}/5<br>Competence:${p.scores.competence}/5${p.note?`<br><i>${p.note}</i>`:""}`);
       });
     };
     if (window.L){init();return;}
@@ -192,23 +199,23 @@ function PostMap({posts}){
   );
 }
 
-// ─── ADMIN PASSWORD SCREEN ────────────────────────────────────────────────────
-function AdminLoginScreen({onSuccess,onBack}){
+// ─── ADMIN LOGIN ──────────────────────────────────────────────────────────────
+function AdminLoginScreen({onSuccess,onBack}) {
   const [pw,setPw]=useState("");const [err,setErr]=useState("");
-  const check=()=>{if(pw===ADMIN_PASSWORD){onSuccess();}else{setErr("Incorrect password.");setPw("");}};
   return(
     <Screen bg={C.dark}>
       <div style={{padding:"72px 28px 0",textAlign:"center"}}>
         <div style={{fontSize:40,marginBottom:16}}>🔒</div>
         <h2 style={{color:C.white,fontSize:22,fontWeight:600,marginBottom:32}}>Admin Access</h2>
         <div style={{background:C.white,borderRadius:20,padding:"28px 24px",textAlign:"left"}}>
-          <SectionLabel>Password</SectionLabel>
-          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&check()} placeholder="Enter admin password"
+          <SLabel>Password</SLabel>
+          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&(pw===ADMIN_PASSWORD?onSuccess():setErr("Incorrect password."))}
+            placeholder="Enter admin password"
             style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`2px solid ${C.light}`,fontSize:16,boxSizing:"border-box",outline:"none",background:C.bg}}/>
           {err&&<p style={{color:"#ef4444",fontSize:13,margin:"8px 0 0"}}>{err}</p>}
           <div style={{marginTop:16,display:"flex",gap:10}}>
             <button onClick={onBack} style={{flex:1,padding:"14px",background:C.white,border:`2px solid ${C.light}`,borderRadius:12,fontWeight:600,cursor:"pointer",color:C.mid}}>Back</button>
-            <button onClick={check} style={{flex:2,padding:"14px",background:C.dark,color:C.white,border:"none",borderRadius:12,fontWeight:600,cursor:"pointer",fontSize:15}}>Enter →</button>
+            <button onClick={()=>pw===ADMIN_PASSWORD?onSuccess():setErr("Incorrect password.")} style={{flex:2,padding:"14px",background:C.dark,color:C.white,border:"none",borderRadius:12,fontWeight:600,cursor:"pointer",fontSize:15}}>Enter →</button>
           </div>
         </div>
       </div>
@@ -217,7 +224,7 @@ function AdminLoginScreen({onSuccess,onBack}){
 }
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
-function LoginScreen({onLogin}){
+function LoginScreen({onLogin}) {
   const [u,setU]=useState("");const [err,setErr]=useState("");const [loading,setLoading]=useState(false);
   const go=async()=>{
     const v=u.trim().toLowerCase();
@@ -237,9 +244,15 @@ function LoginScreen({onLogin}){
           <p style={{color:"#64748b",fontSize:14,lineHeight:1.7,maxWidth:260,margin:"0 auto"}}>Listening to the city with your eyes, ears and instincts.</p>
         </div>
         <div style={{background:C.white,borderRadius:20,padding:"28px 24px",textAlign:"left"}}>
-          <SectionLabel>Your username</SectionLabel>
-          <input value={u} onChange={e=>{setU(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="e.g. student01"
-            style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`2px solid ${C.light}`,fontSize:16,boxSizing:"border-box",outline:"none",background:C.bg}}/>
+          <div style={{background:"#f8fafc",borderRadius:12,padding:"14px 16px",marginBottom:20,display:"flex",gap:10,alignItems:"flex-start"}}>
+            <span style={{fontSize:16}}>🔒</span>
+            <div>
+              <p style={{margin:"0 0 3px",fontSize:13,fontWeight:600,color:C.dark}}>Your privacy is protected</p>
+              <p style={{margin:0,fontSize:12,color:C.mid,lineHeight:1.6}}>All responses are completely anonymous. Data will not be published or shared outside of DIS.</p>
+            </div>
+          </div>
+          <SLabel>Your username</SLabel>
+          <TextInput value={u} onChange={v=>{setU(v);setErr("");}} placeholder="e.g. student01"/>
           {err&&<p style={{color:"#ef4444",fontSize:13,margin:"8px 0 0"}}>{err}</p>}
           <div style={{marginTop:16}}><Btn label={loading?"Checking…":"Enter →"} onClick={go} disabled={loading}/></div>
         </div>
@@ -249,48 +262,89 @@ function LoginScreen({onLogin}){
 }
 
 // ─── PROFILE ─────────────────────────────────────────────────────────────────
-function ProfileScreen({user,onDone}){
-  const [zip,setZip]=useState("");const [housing,setHousing]=useState("");const [homeScore,setHome]=useState(0);
-  const [err,setErr]=useState("");const [saving,setSaving]=useState(false);
-  const valid=zip.trim().length>=3&&housing&&homeScore>0;
-  const save=async()=>{
-    if (!valid){setErr("Please fill in all three.");return;}
+function ProfileScreen({user,onDone}) {
+  const [homeZip,setHomeZip]       = useState("");
+  const [danishZip,setDanishZip]   = useState("");
+  const [housing,setHousing]       = useState("");
+  const [homeScore,setHomeScore]   = useState(0);
+  const [cityShapes,setCityShapes] = useState(3);
+  const [favPlace,setFavPlace]     = useState("");
+  const [err,setErr]   = useState("");
+  const [saving,setSaving] = useState(false);
+
+  const valid = homeZip.trim().length>=3 && danishZip.trim().length>=3 && housing && homeScore>0 && favPlace.trim().length>0;
+
+  const save = async () => {
+    if (!valid){setErr("Please fill in all fields.");return;}
     setSaving(true);
-    await DB.setUser(user,{approved:true,profile:{zip:zip.trim(),housing,homeScore}});
+    await DB.setUser(user,{approved:true,profile:{homeZip:homeZip.trim(),danishZip:danishZip.trim(),housing,homeScore,cityShapes,favPlace:favPlace.trim()}});
     setSaving(false);onDone();
   };
+
   return(
     <Screen>
       <Header title="Gathering" sub="A little about you — just once"/>
-      <div style={{padding:"24px 20px"}}>
-        <div style={{background:C.dark,borderRadius:16,padding:"18px 20px",marginBottom:20,color:C.white}}>
-          <p style={{margin:0,fontSize:14,lineHeight:1.7,color:"#94a3b8"}}>Three quick questions. Anonymous — nothing here can identify you.</p>
+      <div style={{padding:"16px"}}>
+        <div style={{background:C.dark,borderRadius:12,padding:"12px 16px",marginBottom:14}}>
+          <p style={{margin:0,fontSize:12,lineHeight:1.6,color:"#94a3b8"}}>Six quick questions. Completely anonymous — nothing here can identify you.</p>
         </div>
+
+        {/* 1. Home ZIP */}
         <Card style={{marginBottom:12}}>
-          <SectionLabel>Home university ZIP / postal code</SectionLabel>
-          <p style={{fontSize:13,color:C.mid,margin:"0 0 10px",lineHeight:1.5}}>Where are you normally based?</p>
-          <input value={zip} onChange={e=>setZip(e.target.value)} placeholder="e.g. 10001, 02134, SW1A"
-            style={{width:"100%",padding:"11px 13px",borderRadius:10,border:`2px solid ${C.light}`,fontSize:15,boxSizing:"border-box",outline:"none",background:C.bg}}/>
+          <SLabel>Home university ZIP / postal code</SLabel>
+          <p style={{fontSize:13,color:C.mid,margin:"0 0 10px",lineHeight:1.5}}>Where are you normally based? (e.g. 10001, 02134, SW1A)</p>
+          <TextInput value={homeZip} onChange={setHomeZip} placeholder="Your home ZIP or postal code"/>
         </Card>
+
+        {/* 2. Danish postcode */}
         <Card style={{marginBottom:12}}>
-          <SectionLabel>Your housing at DIS</SectionLabel>
+          <SLabel>Your Danish postcode</SLabel>
+          <p style={{fontSize:13,color:C.mid,margin:"0 0 10px",lineHeight:1.5}}>Where are you living in Copenhagen? (e.g. 2200, 1050)</p>
+          <TextInput value={danishZip} onChange={setDanishZip} placeholder="Your Copenhagen postcode"/>
+        </Card>
+
+        {/* 3. Housing */}
+        <Card style={{marginBottom:12}}>
+          <SLabel>Your housing at DIS</SLabel>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {HOUSING.map(h=>(
               <button key={h} onClick={()=>setHousing(h)} style={{padding:"12px 16px",borderRadius:10,textAlign:"left",cursor:"pointer",fontWeight:500,fontSize:14,border:"2px solid",borderColor:housing===h?C.accent:C.light,background:housing===h?"#ede9fe":C.white,color:housing===h?C.accent:C.mid,transition:"all .15s"}}>{h}</button>
             ))}
           </div>
         </Card>
-        <Card style={{marginBottom:20}}>
-          <SectionLabel>How at home do you feel in Copenhagen right now?</SectionLabel>
+
+        {/* 4. Feeling at home */}
+        <Card style={{marginBottom:12}}>
+          <SLabel>How at home do you feel in Copenhagen right now?</SLabel>
           <div style={{display:"flex",gap:6}}>
             {HOME_SCALE.map(s=>(
-              <button key={s.v} onClick={()=>setHome(s.v)} style={{flex:1,padding:"10px 4px",borderRadius:12,border:"2px solid",borderColor:homeScore===s.v?C.accent:C.light,background:homeScore===s.v?"#ede9fe":C.white,cursor:"pointer",textAlign:"center",transition:"all .15s"}}>
+              <button key={s.v} onClick={()=>setHomeScore(s.v)} style={{flex:1,padding:"10px 4px",borderRadius:12,border:"2px solid",borderColor:homeScore===s.v?C.accent:C.light,background:homeScore===s.v?"#ede9fe":C.white,cursor:"pointer",textAlign:"center",transition:"all .15s"}}>
                 <div style={{fontSize:22}}>{s.emoji}</div>
                 <div style={{fontSize:10,fontWeight:600,color:homeScore===s.v?C.accent:C.mid,marginTop:4,lineHeight:1.2}}>{s.label}</div>
               </button>
             ))}
           </div>
         </Card>
+
+        {/* 5. City shapes you */}
+        <Card style={{marginBottom:12}}>
+          <SLabel>How much do you think the city around you shapes how you feel?</SLabel>
+          <input type="range" min={1} max={5} value={cityShapes} onChange={e=>setCityShapes(Number(e.target.value))}
+            style={{width:"100%",accentColor:C.accent,cursor:"pointer",margin:"12px 0 8px"}}/>
+          <div style={{display:"flex",justifyContent:"space-between"}}>
+            <span style={{fontSize:11,color:C.mid,maxWidth:"44%",lineHeight:1.4}}>Hardly at all — it's more about family, friends and work</span>
+            <span style={{fontSize:11,color:C.mid,maxWidth:"44%",textAlign:"right",lineHeight:1.4}}>Quite a bit — the city is the canvas for all life</span>
+          </div>
+        </Card>
+
+        {/* 6. Favourite place */}
+        <Card style={{marginBottom:24}}>
+          <SLabel>What's your favourite place in Copenhagen so far?</SLabel>
+          <p style={{fontSize:13,color:C.mid,margin:"0 0 10px",lineHeight:1.5}}>It could be a street, a café, a park, a view — anything.</p>
+          <textarea value={favPlace} onChange={e=>setFavPlace(e.target.value)} placeholder="Describe your favourite place…" rows={3}
+            style={{width:"100%",padding:"10px 12px",borderRadius:10,border:`2px solid ${C.light}`,fontSize:14,boxSizing:"border-box",resize:"none",outline:"none",background:C.bg}}/>
+        </Card>
+
         {err&&<p style={{color:"#ef4444",fontSize:13,marginBottom:12,textAlign:"center"}}>{err}</p>}
         <Btn label={saving?"Saving…":"Start gathering →"} onClick={save} disabled={!valid||saving}/>
       </div>
@@ -299,7 +353,7 @@ function ProfileScreen({user,onDone}){
 }
 
 // ─── HOME ─────────────────────────────────────────────────────────────────────
-function HomeScreen({user,submissions,onNew,onAdmin}){
+function HomeScreen({user,submissions,onNew,onAdmin}) {
   return(
     <Screen>
       <Header title="Gathering" sub={`@${user}`}/>
@@ -309,7 +363,7 @@ function HomeScreen({user,submissions,onNew,onAdmin}){
             <div>Add to your gathering</div>
             <div style={{fontSize:12,fontWeight:400,color:"#94a3b8",marginTop:2}}>What is this place doing to you?</div>
           </div>
-          <span style={{fontSize:22,opacity:.6}}>+</span>
+          <span style={{fontSize:22,opacity:.5}}>+</span>
         </button>
         {user==="admin"&&<div style={{marginBottom:16}}><Btn label="Admin Dashboard →" onClick={onAdmin} outline/></div>}
         {submissions.length===0?(
@@ -340,14 +394,14 @@ function HomeScreen({user,submissions,onNew,onAdmin}){
 }
 
 // ─── CAPTURE ─────────────────────────────────────────────────────────────────
-function CaptureScreen({onPhoto,onBack}){
+function CaptureScreen({onPhoto,onBack}) {
   const ref=useRef();const [preview,setPreview]=useState(null);const [file,setFile]=useState(null);
   const gps=useGPS();
   return(
     <Screen>
       <Header title="Step 1 — The place" onBack={onBack}/>
       <div style={{padding:"24px 20px"}}>
-        <p style={{color:C.mid,fontSize:14,marginBottom:8,lineHeight:1.7}}>Find something that's making you feel something. It doesn't have to be dramatic — the quiet things count too.</p>
+        <p style={{color:C.mid,fontSize:14,marginBottom:8,lineHeight:1.7}}>Find something that's making you feel something. The quiet things count too.</p>
         <p style={{fontSize:12,color:gps?"#5a9e7c":"#c97d4e",marginBottom:20}}>{gps?"Location captured":"Getting your location…"}</p>
         <input ref={ref} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f){setFile(f);setPreview(URL.createObjectURL(f));}}}/>
         {!preview?(
@@ -370,7 +424,7 @@ function CaptureScreen({onPhoto,onBack}){
 }
 
 // ─── TAG ─────────────────────────────────────────────────────────────────────
-function TagScreen({photoURL,gps,onSubmit,onBack}){
+function TagScreen({photoURL,gps,onSubmit,onBack}) {
   const [scores,setScores]=useState({agency:3,connection:3,competence:3});
   const [note,setNote]=useState("");const [submitting,setSubmitting]=useState(false);
   const handleSubmit=async()=>{
@@ -386,7 +440,7 @@ function TagScreen({photoURL,gps,onSubmit,onBack}){
         <p style={{fontSize:14,color:C.mid,marginBottom:16,lineHeight:1.7}}>How did this place make you feel? Slide honestly.</p>
         {DIMS.map(d=><VibeSlider key={d.id} dim={d} value={scores[d.id]} onChange={v=>setScores(s=>({...s,[d.id]:v}))}/>)}
         <Card style={{marginBottom:20}}>
-          <SectionLabel>What were you noticing? (optional)</SectionLabel>
+          <SLabel>What were you noticing? (optional)</SLabel>
           <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Describe what caught your attention…" rows={3}
             style={{width:"100%",padding:"10px 12px",borderRadius:10,border:`2px solid ${C.light}`,fontSize:14,boxSizing:"border-box",resize:"none",outline:"none",background:C.bg}}/>
         </Card>
@@ -397,7 +451,7 @@ function TagScreen({photoURL,gps,onSubmit,onBack}){
 }
 
 // ─── SUCCESS ─────────────────────────────────────────────────────────────────
-function SuccessScreen({onDone}){
+function SuccessScreen({onDone}) {
   return(
     <Screen bg={C.bg}>
       <div style={{padding:"80px 28px",textAlign:"center"}}>
@@ -411,7 +465,7 @@ function SuccessScreen({onDone}){
 }
 
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
-function AdminScreen({onBack}){
+function AdminScreen({onBack}) {
   const [tab,setTab]=useState("feed");
   const [posts,setPosts]=useState([]);const [users,setUsers]=useState([]);
   const [loading,setLoading]=useState(true);
@@ -429,11 +483,16 @@ function AdminScreen({onBack}){
   };
   const removeUser=async(u)=>{await DB.setUser(u,{approved:false});setUsers(us=>us.filter(x=>x.username!==u));};
   const downloadCSV=()=>{
-    const rows=[["Timestamp","User","Lat","Lng","Agency","Connection","Competence","Note","Home ZIP","Housing","Feeling at Home"]];
-    posts.forEach(p=>{const u=users.find(x=>x.username===p.user)||{};const pr=u.profile||{};rows.push([p.timestamp,p.user||"?",p.lat||"",p.lng||"",p.scores?.agency,p.scores?.connection,p.scores?.competence,p.note||"",pr.zip||"",pr.housing||"",pr.homeScore||""]);});
+    const rows=[["Timestamp","User","Lat","Lng","Agency","Connection","Competence","Note","Home ZIP","Danish ZIP","Housing","Feeling at Home","City Shapes (1-5)","Favourite Place"]];
+    posts.forEach(p=>{
+      const u=users.find(x=>x.username===p.user)||{};const pr=u.profile||{};
+      rows.push([p.timestamp,p.user||"?",p.lat||"",p.lng||"",p.scores?.agency,p.scores?.connection,p.scores?.competence,p.note||"",pr.homeZip||"",pr.danishZip||"",pr.housing||"",pr.homeScore||"",pr.cityShapes||"",pr.favPlace||""]);
+    });
     const csv=rows.map(r=>r.map(v=>`"${v}"`).join(",")).join("\n");
     const a=document.createElement("a");a.href="data:text/csv,"+encodeURIComponent(csv);a.download="gathering.csv";a.click();
   };
+
+  const CITY_SHAPES_LABELS=["","Hardly at all","Not much","Somewhat","Quite a bit","Very much"];
 
   return(
     <Screen>
@@ -453,6 +512,7 @@ function AdminScreen({onBack}){
       </div>
       <div style={{padding:"16px"}}>
         {loading&&<p style={{textAlign:"center",color:C.mid,padding:"40px 0"}}>Loading…</p>}
+
         {!loading&&tab==="feed"&&(
           posts.length===0?<p style={{textAlign:"center",color:C.mid,padding:"40px 0"}}>No posts yet.</p>
           :[...posts].reverse().map((p,i)=>{
@@ -465,13 +525,16 @@ function AdminScreen({onBack}){
                     <span style={{fontWeight:600,fontSize:14}}>@{p.user||"?"}</span>
                     <span style={{fontSize:12,color:C.mid}}>{new Date(p.timestamp).toLocaleDateString()}</span>
                   </div>
-                  {(pr.zip||pr.housing||pr.homeScore)&&(
+                  {(pr.homeZip||pr.housing||pr.homeScore)&&(
                     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
-                      {pr.zip&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:C.bg,color:C.mid,fontWeight:500}}>📍 {pr.zip}</span>}
-                      {pr.housing&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:C.bg,color:C.mid,fontWeight:500}}>🏠 {pr.housing}</span>}
-                      {pr.homeScore&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:"#ede9fe",color:C.accent,fontWeight:500}}>🌍 {HOME_LABELS[pr.homeScore]}</span>}
+                      {pr.homeZip&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:C.bg,color:C.mid,fontWeight:500}}>🏠 {pr.homeZip}</span>}
+                      {pr.danishZip&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:C.bg,color:C.mid,fontWeight:500}}>📍 CPH {pr.danishZip}</span>}
+                      {pr.housing&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:C.bg,color:C.mid,fontWeight:500}}>{pr.housing}</span>}
+                      {pr.homeScore&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:"#ede9fe",color:C.accent,fontWeight:500}}>{HOME_LABELS[pr.homeScore]} at home</span>}
+                      {pr.cityShapes&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontWeight:500}}>City shapes: {CITY_SHAPES_LABELS[pr.cityShapes]}</span>}
                     </div>
                   )}
+                  {pr.favPlace&&<p style={{margin:"0 0 8px",fontSize:12,color:C.mid,fontStyle:"italic"}}>❤️ "{pr.favPlace}"</p>}
                   <div style={{display:"flex",gap:8,marginBottom:p.note?10:0}}>
                     {DIMS.map(d=>(
                       <div key={d.id} style={{flex:1,background:d.track,borderRadius:8,padding:"7px",textAlign:"center"}}>
@@ -491,7 +554,7 @@ function AdminScreen({onBack}){
         {!loading&&tab==="users"&&(
           <div>
             <Card style={{marginBottom:14}}>
-              <SectionLabel>Add a student</SectionLabel>
+              <SLabel>Add a student</SLabel>
               <div style={{display:"flex",gap:8}}>
                 <input value={newUser} onChange={e=>setNewUser(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addUser()} placeholder="username"
                   style={{flex:1,padding:"10px 12px",borderRadius:10,border:`2px solid ${C.light}`,fontSize:14,outline:"none",background:C.bg}}/>
@@ -503,7 +566,8 @@ function AdminScreen({onBack}){
               <div key={i} style={{background:C.white,borderRadius:12,padding:"12px 14px",marginBottom:8,border:`1px solid ${C.light}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <div>
                   <div style={{fontWeight:600,fontSize:14}}>@{u.username}</div>
-                  {u.profile&&<div style={{fontSize:12,color:C.mid,marginTop:2}}>{u.profile.housing} · {u.profile.zip} · {HOME_LABELS[u.profile.homeScore]}</div>}
+                  {u.profile&&<div style={{fontSize:12,color:C.mid,marginTop:2}}>{u.profile.housing} · CPH {u.profile.danishZip} · {HOME_LABELS[u.profile.homeScore]} at home</div>}
+                  {u.profile?.favPlace&&<div style={{fontSize:11,color:C.mid,marginTop:2,fontStyle:"italic"}}>❤️ {u.profile.favPlace}</div>}
                   <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{posts.filter(p=>p.user===u.username).length} posts</div>
                 </div>
                 <button onClick={()=>removeUser(u.username)} style={{background:"none",border:"1px solid #fecaca",color:"#ef4444",borderRadius:8,padding:"6px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Remove</button>
@@ -517,22 +581,31 @@ function AdminScreen({onBack}){
 }
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
-export default function App(){
+export default function App() {
   const [screen,setScreen]=useState("login");
   const [user,setUser]=useState(null);
   const [photo,setPhoto]=useState({url:null,file:null});
   const [gps,setGps]=useState(null);
   const [subs,setSubs]=useState([]);
 
-  const login=(u,doc)=>{setUser(u);setScreen(u==="admin"?"adminlogin":doc?.profile?.zip?"home":"profile");};
+  const login=async(u,doc)=>{
+    setUser(u);
+    if (u!=="admin") {
+      try {
+        const all = await DB.getPosts();
+        setSubs(all.filter(p=>p.user===u));
+      } catch(e) { console.error("Failed to load posts:",e); }
+    }
+    setScreen(u==="admin"?"adminlogin":doc?.profile?.homeZip?"home":"profile");
+  };
   const submit=async(e)=>{const entry={...e,user,photoFile:photo.file};await DB.addPost(entry);setSubs(s=>[...s,{...entry,photoURL:photo.url}]);setScreen("success");};
 
   if (screen==="adminlogin") return <AdminLoginScreen onSuccess={()=>setScreen("home")} onBack={()=>setScreen("login")}/>;
-  if (screen==="login")   return <LoginScreen onLogin={login}/>;
-  if (screen==="profile") return <ProfileScreen user={user} onDone={()=>setScreen("home")}/>;
-  if (screen==="home")    return <HomeScreen user={user} submissions={subs} onNew={()=>setScreen("capture")} onAdmin={()=>setScreen("admin")}/>;
-  if (screen==="capture") return <CaptureScreen onPhoto={(url,file,g)=>{setPhoto({url,file});setGps(g);setScreen("tag");}} onBack={()=>setScreen("home")}/>;
-  if (screen==="tag")     return <TagScreen photoURL={photo.url} gps={gps} onSubmit={submit} onBack={()=>setScreen("capture")}/>;
-  if (screen==="success") return <SuccessScreen onDone={()=>setScreen("home")}/>;
-  if (screen==="admin")   return <AdminScreen onBack={()=>setScreen("home")}/>;
+  if (screen==="login")      return <LoginScreen onLogin={login}/>;
+  if (screen==="profile")    return <ProfileScreen user={user} onDone={()=>setScreen("home")}/>;
+  if (screen==="home")       return <HomeScreen user={user} submissions={subs} onNew={()=>setScreen("capture")} onAdmin={()=>setScreen("admin")}/>;
+  if (screen==="capture")    return <CaptureScreen onPhoto={(url,file,g)=>{setPhoto({url,file});setGps(g);setScreen("tag");}} onBack={()=>setScreen("home")}/>;
+  if (screen==="tag")        return <TagScreen photoURL={photo.url} gps={gps} onSubmit={submit} onBack={()=>setScreen("capture")}/>;
+  if (screen==="success")    return <SuccessScreen onDone={()=>setScreen("home")}/>;
+  if (screen==="admin")      return <AdminScreen onBack={()=>setScreen("home")}/>;
 }
