@@ -1,6 +1,46 @@
 import React, { useState, useRef, useEffect } from "react";
 
-// ─── FIREBASE CONFIG ──────────────────────────────────────────────────────────
+// ─── SLIDER STYLES ───────────────────────────────────────────────────────────
+const sliderCSS = document.createElement("style");
+sliderCSS.textContent = `
+  .gather-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #e8e3dc;
+    outline: none;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .gather-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #7c6fcd;
+    cursor: pointer;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  .gather-slider::-moz-range-thumb {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #7c6fcd;
+    cursor: pointer;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  .gather-slider.agency::-webkit-slider-thumb   { background: #7c6fcd; }
+  .gather-slider.agency::-webkit-slider-runnable-track { background: linear-gradient(to right, #7c6fcd var(--val), #e8e3dc var(--val)); border-radius: 3px; }
+  .gather-slider.competence::-webkit-slider-thumb { background: #4a9ead; }
+  .gather-slider.connection::-webkit-slider-thumb { background: #5a9e7c; }
+  .gather-slider.neutral::-webkit-slider-thumb   { background: #7c6fcd; }
+`;
+document.head.appendChild(sliderCSS);
 const PROJECT_ID     = "gathering-risom";
 const API_KEY        = "AIzaSyB19EhfnPWGoMeTAHmsdNtJnaJ81U8RjkM";
 const STORAGE_BUCKET = "gathering-risom.firebasestorage.app";
@@ -106,6 +146,7 @@ const C = { bg:"#f5f2ee", dark:"#1c1c1e", mid:"#6b6660", light:"#e8e3dc", accent
 
 // ─── SHARED UI ────────────────────────────────────────────────────────────────
 function Screen({children,bg=C.bg}) {
+  useEffect(()=>{ window.scrollTo(0,0); },[]);
   return(
     <div style={{minHeight:"100vh",background:bg,display:"flex",flexDirection:"column",alignItems:"center",WebkitTextSizeAdjust:"100%"}}>
       <div style={{width:"100%",maxWidth:480,boxSizing:"border-box"}}>{children}</div>
