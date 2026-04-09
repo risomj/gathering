@@ -1,19 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 
-// ─── SLIDER STYLES (injected once) ───────────────────────────────────────────
-const sliderCSS = document.createElement("style");
-sliderCSS.textContent = `
-  .g-slider { -webkit-appearance:none; appearance:none; width:100%; height:44px;
-    background:transparent; outline:none; cursor:pointer; margin:0; padding:0; }
-  .g-slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none;
-    width:28px; height:28px; border-radius:50%; background:#fff;
-    border:3px solid #7c6fcd; box-shadow:0 2px 6px rgba(0,0,0,0.2);
-    cursor:pointer; position:relative; z-index:2; }
-  .g-slider::-moz-range-thumb { width:28px; height:28px; border-radius:50%;
-    background:#fff; border:3px solid #7c6fcd;
-    box-shadow:0 2px 6px rgba(0,0,0,0.2); cursor:pointer; }
-`;
-document.head.appendChild(sliderCSS);
+// ─── FIREBASE CONFIG ──────────────────────────────────────────────────────────
 const PROJECT_ID     = "gathering-risom";
 const API_KEY        = "AIzaSyB19EhfnPWGoMeTAHmsdNtJnaJ81U8RjkM";
 const STORAGE_BUCKET = "gathering-risom.firebasestorage.app";
@@ -50,17 +37,17 @@ function toFS(obj) {
   const out = {};
   for (const [k,v] of Object.entries(obj)) {
     if (v===null||v===undefined) continue;
-    if (typeof v==="string")  out[k]={stringValue:v};
-    else if (typeof v==="number") out[k]={integerValue:String(v)};
+    if (typeof v==="string")       out[k]={stringValue:v};
+    else if (typeof v==="number")  out[k]={integerValue:String(v)};
     else if (typeof v==="boolean") out[k]={booleanValue:v};
-    else if (typeof v==="object") out[k]={mapValue:{fields:toFS(v)}};
+    else if (typeof v==="object")  out[k]={mapValue:{fields:toFS(v)}};
   }
   return out;
 }
 function fromFS(fields={}) {
   const out={};
   for (const [k,v] of Object.entries(fields)) {
-    if (v.stringValue!==undefined) out[k]=v.stringValue;
+    if (v.stringValue!==undefined)  out[k]=v.stringValue;
     else if (v.integerValue!==undefined) out[k]=Number(v.integerValue);
     else if (v.booleanValue!==undefined) out[k]=v.booleanValue;
     else if (v.mapValue) out[k]=fromFS(v.mapValue.fields||{});
@@ -151,34 +138,95 @@ function TextInput({value,onChange,placeholder}) {
   return <input value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
     style={{width:"100%",padding:"11px 13px",borderRadius:10,border:`2px solid ${C.light}`,fontSize:15,boxSizing:"border-box",outline:"none",background:C.bg}}/>;
 }
+
+// ─── CUSTOM TOUCH SLIDER ─────────────────────────────────────────────────────
 function VibeSlider({dim,value,onChange}) {
-  return(
-    <Card style={{marginBottom:10,padding:"14px 16px"}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-        <span style={{fontWeight:600,fontSize:14,color:C.dark}}>{dim.label}</span>
-        <span style={{marginLeft:"auto",fontSize:28}}>{EMOJIS[value-1]}</span>
+  const trackRef = useRef(null);
+
+  const getVal = (clientX) => {
+    const rect = trackRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return Math.round(pct * 4) + 1;
+  };
+
+  const pct = (value - 1) / 4;
+
+  return (
+    <Card style={{marginBottom:10, padding:"14px 16px"}}>
+      <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:2}}>
+        <span style={{fontWeight:600, fontSize:14, color:C.dark}}>{dim.label}</span>
+        <span style={{marginLeft:"auto", fontSize:26}}>{EMOJIS[value-1]}</span>
       </div>
-      <p style={{fontSize:12,color:C.mid,margin:"0 0 10px",lineHeight:1.4}}>{dim.question}</p>
-      {/* larger touch target for slider */}
-      <div style={{padding:"8px 0"}}>
-        <input type="range" min={1} max={5} value={value} onChange={e=>onChange(Number(e.target.value))}
-          style={{width:"100%",accentColor:dim.color,cursor:"pointer",height:28,WebkitAppearance:"none",appearance:"none"}}/>
+      <p style={{fontSize:12, color:C.mid, margin:"0 0 20px", lineHeight:1.4}}>{dim.question}</p>
+
+      <div
+        ref={trackRef}
+        onClick={e => onChange(getVal(e.clientX))}
+        onTouchStart={e => { e.preventDefault(); onChange(getVal(e.touches[0].clientX)); }}
+        onTouchMove={e => { e.preventDefault(); onChange(getVal(e.touches[0].clientX)); }}
+        style={{position:"relative", height:44, cursor:"pointer", userSelect:"none"}}
+      >
+        {/* Background track */}
+        <div style={{position:"absolute", top:"50%", left:0, right:0, height:4,
+          background:C.light, borderRadius:2, transform:"translateY(-50%)", pointerEvents:"none"}}/>
+
+        {/* Filled track */}
+        <div style={{position:"absolute", top:"50%", left:0, width:`${pct*100}%`, height:4,
+          background:dim.color, borderRadius:2, transform:"translateY(-50%)",
+          pointerEvents:"none", transition:"width .05s"}}/>
+
+        {/* 5 step dots */}
+        {[0,1,2,3,4].map(i => {
+          const s = i + 1;
+          const active = s <= value;
+          const current = s === value;
+          return (
+            <div key={i} style={{
+              position:"absolute", top:"50%", left:`${(i/4)*100}%`,
+              transform:"translate(-50%,-50%)",
+              width: current ? 16 : 10,
+              height: current ? 16 : 10,
+              borderRadius:"50%",
+              background: active ? dim.color : "#d1c9bf",
+              boxShadow: current ? `0 0 0 4px ${dim.color}44` : "none",
+              transition:"all .15s",
+              pointerEvents:"none"
+            }}/>
+          );
+        })}
+
+        {/* Thumb */}
+        <div style={{
+          position:"absolute", top:"50%", left:`${pct*100}%`,
+          transform:"translate(-50%,-50%)",
+          width:30, height:30, borderRadius:"50%",
+          background:C.white, border:`3px solid ${dim.color}`,
+          boxShadow:"0 2px 8px rgba(0,0,0,0.2)",
+          pointerEvents:"none", transition:"left .05s", zIndex:2
+        }}/>
       </div>
-      <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
-        <span style={{fontSize:11,color:C.mid,maxWidth:"44%",lineHeight:1.3}}>{dim.lo}</span>
-        <span style={{fontSize:11,color:C.mid,maxWidth:"44%",textAlign:"right",lineHeight:1.3}}>{dim.hi}</span>
+
+      <div style={{display:"flex", justifyContent:"space-between", marginTop:8}}>
+        <span style={{fontSize:11, color:C.mid, maxWidth:"44%", lineHeight:1.3}}>{dim.lo}</span>
+        <span style={{fontSize:11, color:C.mid, maxWidth:"44%", textAlign:"right", lineHeight:1.3}}>{dim.hi}</span>
       </div>
     </Card>
   );
 }
+
 function useGPS() {
   const [pos,setPos]=useState(null);
   useEffect(()=>{
     if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(p=>setPos({lat:p.coords.latitude,lng:p.coords.longitude}),()=>setPos(null),{enableHighAccuracy:true,timeout:8000});
+    navigator.geolocation.getCurrentPosition(
+      p=>setPos({lat:p.coords.latitude,lng:p.coords.longitude}),
+      ()=>setPos(null),
+      {enableHighAccuracy:true,timeout:8000}
+    );
   },[]);
   return pos;
 }
+
 function PostMap({posts}) {
   const id=useRef("map-"+Math.random().toString(36).slice(2));
   const instance=useRef(null);
@@ -194,7 +242,8 @@ function PostMap({posts}) {
       geo.forEach(p=>{
         const avg=Math.round((p.scores.agency+p.scores.connection+p.scores.competence)/3);
         const cols=["#ef4444","#f97316","#eab308","#22c55e","#7c6fcd"];
-        L.circleMarker([p.lat,p.lng],{radius:10,fillColor:cols[avg-1]||"#7c6fcd",color:"#fff",weight:2,fillOpacity:0.9}).addTo(map)
+        L.circleMarker([p.lat,p.lng],{radius:10,fillColor:cols[avg-1]||"#7c6fcd",color:"#fff",weight:2,fillOpacity:0.9})
+          .addTo(map)
           .bindPopup(`<b>@${p.user}</b><br>Agency:${p.scores.agency}/5<br>Connection:${p.scores.connection}/5<br>Competence:${p.scores.competence}/5${p.note?`<br><i>${p.note}</i>`:""}`);
       });
     };
@@ -215,7 +264,8 @@ function PostMap({posts}) {
 
 // ─── ADMIN LOGIN ──────────────────────────────────────────────────────────────
 function AdminLoginScreen({onSuccess,onBack}) {
-  const [pw,setPw]=useState("");const [err,setErr]=useState("");
+  const [pw,setPw]=useState(""); const [err,setErr]=useState("");
+  const check=()=>pw===ADMIN_PASSWORD?onSuccess():setErr("Incorrect password.");
   return(
     <Screen bg={C.dark}>
       <div style={{padding:"72px 28px 0",textAlign:"center"}}>
@@ -223,13 +273,13 @@ function AdminLoginScreen({onSuccess,onBack}) {
         <h2 style={{color:C.white,fontSize:22,fontWeight:600,marginBottom:32}}>Admin Access</h2>
         <div style={{background:C.white,borderRadius:20,padding:"28px 24px",textAlign:"left"}}>
           <SLabel>Password</SLabel>
-          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&(pw===ADMIN_PASSWORD?onSuccess():setErr("Incorrect password."))}
+          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&check()}
             placeholder="Enter admin password"
             style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`2px solid ${C.light}`,fontSize:16,boxSizing:"border-box",outline:"none",background:C.bg}}/>
           {err&&<p style={{color:"#ef4444",fontSize:13,margin:"8px 0 0"}}>{err}</p>}
           <div style={{marginTop:16,display:"flex",gap:10}}>
             <button onClick={onBack} style={{flex:1,padding:"14px",background:C.white,border:`2px solid ${C.light}`,borderRadius:12,fontWeight:600,cursor:"pointer",color:C.mid}}>Back</button>
-            <button onClick={()=>pw===ADMIN_PASSWORD?onSuccess():setErr("Incorrect password.")} style={{flex:2,padding:"14px",background:C.dark,color:C.white,border:"none",borderRadius:12,fontWeight:600,cursor:"pointer",fontSize:15}}>Enter →</button>
+            <button onClick={check} style={{flex:2,padding:"14px",background:C.dark,color:C.white,border:"none",borderRadius:12,fontWeight:600,cursor:"pointer",fontSize:15}}>Enter →</button>
           </div>
         </div>
       </div>
@@ -239,7 +289,7 @@ function AdminLoginScreen({onSuccess,onBack}) {
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
 function LoginScreen({onLogin}) {
-  const [u,setU]=useState("");const [err,setErr]=useState("");const [loading,setLoading]=useState(false);
+  const [u,setU]=useState(""); const [err,setErr]=useState(""); const [loading,setLoading]=useState(false);
   const go=async()=>{
     const v=u.trim().toLowerCase();
     if (!v){setErr("Enter your username.");return;}
@@ -285,16 +335,13 @@ function ProfileScreen({user,onDone}) {
   const [favPlace,setFavPlace]     = useState("");
   const [err,setErr]   = useState("");
   const [saving,setSaving] = useState(false);
-
   const valid = homeZip.trim().length>=3 && danishZip.trim().length>=3 && housing && homeScore>0 && favPlace.trim().length>0;
-
   const save = async () => {
     if (!valid){setErr("Please fill in all fields.");return;}
     setSaving(true);
     await DB.setUser(user,{approved:true,profile:{homeZip:homeZip.trim(),danishZip:danishZip.trim(),housing,homeScore,cityShapes,favPlace:favPlace.trim()}});
-    setSaving(false);onDone();
+    setSaving(false); onDone();
   };
-
   return(
     <Screen>
       <Header title="Gathering" sub="A little about you — just once"/>
@@ -302,22 +349,16 @@ function ProfileScreen({user,onDone}) {
         <div style={{background:C.dark,borderRadius:12,padding:"12px 16px",marginBottom:14}}>
           <p style={{margin:0,fontSize:12,lineHeight:1.6,color:"#94a3b8"}}>Six quick questions. Completely anonymous — nothing here can identify you.</p>
         </div>
-
-        {/* 1. Home ZIP */}
         <Card style={{marginBottom:12}}>
           <SLabel>Home university ZIP / postal code</SLabel>
           <p style={{fontSize:13,color:C.mid,margin:"0 0 10px",lineHeight:1.5}}>Where are you normally based? (e.g. 10001, 02134, SW1A)</p>
           <TextInput value={homeZip} onChange={setHomeZip} placeholder="Your home ZIP or postal code"/>
         </Card>
-
-        {/* 2. Danish postcode */}
         <Card style={{marginBottom:12}}>
           <SLabel>Your Danish postcode</SLabel>
           <p style={{fontSize:13,color:C.mid,margin:"0 0 10px",lineHeight:1.5}}>Where are you living in Copenhagen? (e.g. 2200, 1050)</p>
           <TextInput value={danishZip} onChange={setDanishZip} placeholder="Your Copenhagen postcode"/>
         </Card>
-
-        {/* 3. Housing */}
         <Card style={{marginBottom:12}}>
           <SLabel>Your housing at DIS</SLabel>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -326,8 +367,6 @@ function ProfileScreen({user,onDone}) {
             ))}
           </div>
         </Card>
-
-        {/* 4. Feeling at home */}
         <Card style={{marginBottom:12}}>
           <SLabel>How at home do you feel in Copenhagen right now?</SLabel>
           <div style={{display:"flex",gap:6}}>
@@ -339,8 +378,6 @@ function ProfileScreen({user,onDone}) {
             ))}
           </div>
         </Card>
-
-        {/* 5. City shapes you */}
         <Card style={{marginBottom:12}}>
           <SLabel>How much do you think the city around you shapes how you feel?</SLabel>
           <input type="range" min={1} max={5} value={cityShapes} onChange={e=>setCityShapes(Number(e.target.value))}
@@ -350,15 +387,12 @@ function ProfileScreen({user,onDone}) {
             <span style={{fontSize:11,color:C.mid,maxWidth:"44%",textAlign:"right",lineHeight:1.4}}>Quite a bit — the city is the canvas for all life</span>
           </div>
         </Card>
-
-        {/* 6. Favourite place */}
         <Card style={{marginBottom:24}}>
           <SLabel>What's your favourite place in Copenhagen so far?</SLabel>
           <p style={{fontSize:13,color:C.mid,margin:"0 0 10px",lineHeight:1.5}}>It could be a street, a café, a park, a view — anything.</p>
           <textarea value={favPlace} onChange={e=>setFavPlace(e.target.value)} placeholder="Describe your favourite place…" rows={3}
             style={{width:"100%",padding:"10px 12px",borderRadius:10,border:`2px solid ${C.light}`,fontSize:14,boxSizing:"border-box",resize:"none",outline:"none",background:C.bg}}/>
         </Card>
-
         {err&&<p style={{color:"#ef4444",fontSize:13,marginBottom:12,textAlign:"center"}}>{err}</p>}
         <Btn label={saving?"Saving…":"Start gathering →"} onClick={save} disabled={!valid||saving}/>
       </div>
@@ -409,7 +443,7 @@ function HomeScreen({user,submissions,onNew,onAdmin}) {
 
 // ─── CAPTURE ─────────────────────────────────────────────────────────────────
 function CaptureScreen({onPhoto,onBack}) {
-  const ref=useRef();const [preview,setPreview]=useState(null);const [file,setFile]=useState(null);
+  const ref=useRef(); const [preview,setPreview]=useState(null); const [file,setFile]=useState(null);
   const gps=useGPS();
   return(
     <Screen>
@@ -440,7 +474,7 @@ function CaptureScreen({onPhoto,onBack}) {
 // ─── TAG ─────────────────────────────────────────────────────────────────────
 function TagScreen({photoURL,gps,onSubmit,onBack}) {
   const [scores,setScores]=useState({agency:3,connection:3,competence:3});
-  const [note,setNote]=useState("");const [submitting,setSubmitting]=useState(false);
+  const [note,setNote]=useState(""); const [submitting,setSubmitting]=useState(false);
   const handleSubmit=async()=>{
     setSubmitting(true);
     await new Promise(r=>setTimeout(r,400));
@@ -481,32 +515,31 @@ function SuccessScreen({onDone}) {
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
 function AdminScreen({onBack}) {
   const [tab,setTab]=useState("feed");
-  const [posts,setPosts]=useState([]);const [users,setUsers]=useState([]);
+  const [posts,setPosts]=useState([]); const [users,setUsers]=useState([]);
   const [loading,setLoading]=useState(true);
-  const [newUser,setNewUser]=useState("");const [addMsg,setAddMsg]=useState("");
+  const [newUser,setNewUser]=useState(""); const [addMsg,setAddMsg]=useState("");
+  const CITY_SHAPES_LABELS=["","Hardly at all","Not much","Somewhat","Quite a bit","Very much"];
 
   useEffect(()=>{
     (async()=>{const [p,u]=await Promise.all([DB.getPosts(),DB.getAllUsers()]);setPosts(p);setUsers(u);setLoading(false);})();
   },[]);
 
   const addUser=async()=>{
-    const v=newUser.trim().toLowerCase();if(!v)return;
+    const v=newUser.trim().toLowerCase(); if(!v)return;
     await DB.setUser(v,{approved:true});
     setUsers(u=>[...u,{username:v,approved:true}]);
-    setNewUser("");setAddMsg(`✓ @${v} added`);setTimeout(()=>setAddMsg(""),3000);
+    setNewUser(""); setAddMsg(`✓ @${v} added`); setTimeout(()=>setAddMsg(""),3000);
   };
   const removeUser=async(u)=>{await DB.setUser(u,{approved:false});setUsers(us=>us.filter(x=>x.username!==u));};
   const downloadCSV=()=>{
     const rows=[["Timestamp","User","Lat","Lng","Agency","Connection","Competence","Note","Home ZIP","Danish ZIP","Housing","Feeling at Home","City Shapes (1-5)","Favourite Place"]];
     posts.forEach(p=>{
-      const u=users.find(x=>x.username===p.user)||{};const pr=u.profile||{};
+      const u=users.find(x=>x.username===p.user)||{}; const pr=u.profile||{};
       rows.push([p.timestamp,p.user||"?",p.lat||"",p.lng||"",p.scores?.agency,p.scores?.connection,p.scores?.competence,p.note||"",pr.homeZip||"",pr.danishZip||"",pr.housing||"",pr.homeScore||"",pr.cityShapes||"",pr.favPlace||""]);
     });
     const csv=rows.map(r=>r.map(v=>`"${v}"`).join(",")).join("\n");
-    const a=document.createElement("a");a.href="data:text/csv,"+encodeURIComponent(csv);a.download="gathering.csv";a.click();
+    const a=document.createElement("a"); a.href="data:text/csv,"+encodeURIComponent(csv); a.download="gathering.csv"; a.click();
   };
-
-  const CITY_SHAPES_LABELS=["","Hardly at all","Not much","Somewhat","Quite a bit","Very much"];
 
   return(
     <Screen>
@@ -526,11 +559,10 @@ function AdminScreen({onBack}) {
       </div>
       <div style={{padding:"16px"}}>
         {loading&&<p style={{textAlign:"center",color:C.mid,padding:"40px 0"}}>Loading…</p>}
-
         {!loading&&tab==="feed"&&(
           posts.length===0?<p style={{textAlign:"center",color:C.mid,padding:"40px 0"}}>No posts yet.</p>
           :[...posts].reverse().map((p,i)=>{
-            const u=users.find(x=>x.username===p.user)||{};const pr=u.profile||{};
+            const u=users.find(x=>x.username===p.user)||{}; const pr=u.profile||{};
             return(
               <div key={i} style={{background:C.white,borderRadius:14,marginBottom:12,overflow:"hidden",border:`1px solid ${C.light}`}}>
                 {p.photoURL&&<img src={p.photoURL} alt="" style={{width:"100%",height:180,objectFit:"cover"}}/>}
@@ -545,7 +577,7 @@ function AdminScreen({onBack}) {
                       {pr.danishZip&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:C.bg,color:C.mid,fontWeight:500}}>📍 CPH {pr.danishZip}</span>}
                       {pr.housing&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:C.bg,color:C.mid,fontWeight:500}}>{pr.housing}</span>}
                       {pr.homeScore&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:"#ede9fe",color:C.accent,fontWeight:500}}>{HOME_LABELS[pr.homeScore]} at home</span>}
-                      {pr.cityShapes&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontWeight:500}}>City shapes: {CITY_SHAPES_LABELS[pr.cityShapes]}</span>}
+                      {pr.cityShapes&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontWeight:500}}>City: {CITY_SHAPES_LABELS[pr.cityShapes]}</span>}
                     </div>
                   )}
                   {pr.favPlace&&<p style={{margin:"0 0 8px",fontSize:12,color:C.mid,fontStyle:"italic"}}>❤️ "{pr.favPlace}"</p>}
@@ -605,14 +637,17 @@ export default function App() {
   const login=async(u,doc)=>{
     setUser(u);
     if (u!=="admin") {
-      try {
-        const all = await DB.getPosts();
-        setSubs(all.filter(p=>p.user===u));
-      } catch(e) { console.error("Failed to load posts:",e); }
+      try { const all=await DB.getPosts(); setSubs(all.filter(p=>p.user===u)); }
+      catch(e) { console.error("Failed to load posts:",e); }
     }
     setScreen(u==="admin"?"adminlogin":doc?.profile?.homeZip?"home":"profile");
   };
-  const submit=async(e)=>{const entry={...e,user,photoFile:photo.file};await DB.addPost(entry);setSubs(s=>[...s,{...entry,photoURL:photo.url}]);setScreen("success");};
+  const submit=async(e)=>{
+    const entry={...e,user,photoFile:photo.file};
+    await DB.addPost(entry);
+    setSubs(s=>[...s,{...entry,photoURL:photo.url}]);
+    setScreen("success");
+  };
 
   if (screen==="adminlogin") return <AdminLoginScreen onSuccess={()=>setScreen("home")} onBack={()=>setScreen("login")}/>;
   if (screen==="login")      return <LoginScreen onLogin={login}/>;
