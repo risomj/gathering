@@ -1,44 +1,17 @@
 import React, { useState, useRef, useEffect } from "react";
 
-// ─── SLIDER STYLES ───────────────────────────────────────────────────────────
+// ─── SLIDER STYLES (injected once) ───────────────────────────────────────────
 const sliderCSS = document.createElement("style");
 sliderCSS.textContent = `
-  .gather-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 6px;
-    border-radius: 3px;
-    background: #e8e3dc;
-    outline: none;
-    cursor: pointer;
-    touch-action: none;
-  }
-  .gather-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: #7c6fcd;
-    cursor: pointer;
-    border: 3px solid #fff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  }
-  .gather-slider::-moz-range-thumb {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: #7c6fcd;
-    cursor: pointer;
-    border: 3px solid #fff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  }
-  .gather-slider.agency::-webkit-slider-thumb   { background: #7c6fcd; }
-  .gather-slider.agency::-webkit-slider-runnable-track { background: linear-gradient(to right, #7c6fcd var(--val), #e8e3dc var(--val)); border-radius: 3px; }
-  .gather-slider.competence::-webkit-slider-thumb { background: #4a9ead; }
-  .gather-slider.connection::-webkit-slider-thumb { background: #5a9e7c; }
-  .gather-slider.neutral::-webkit-slider-thumb   { background: #7c6fcd; }
+  .g-slider { -webkit-appearance:none; appearance:none; width:100%; height:44px;
+    background:transparent; outline:none; cursor:pointer; margin:0; padding:0; }
+  .g-slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none;
+    width:28px; height:28px; border-radius:50%; background:#fff;
+    border:3px solid #7c6fcd; box-shadow:0 2px 6px rgba(0,0,0,0.2);
+    cursor:pointer; position:relative; z-index:2; }
+  .g-slider::-moz-range-thumb { width:28px; height:28px; border-radius:50%;
+    background:#fff; border:3px solid #7c6fcd;
+    box-shadow:0 2px 6px rgba(0,0,0,0.2); cursor:pointer; }
 `;
 document.head.appendChild(sliderCSS);
 const PROJECT_ID     = "gathering-risom";
@@ -280,7 +253,7 @@ function LoginScreen({onLogin}) {
     <Screen bg={C.dark}>
       <div style={{padding:"72px 28px 0",textAlign:"center"}}>
         <div style={{marginBottom:32}}>
-          <div style={{fontSize:36,fontWeight:400,color:C.white,letterSpacing:"-0.5px",marginBottom:8,fontStyle:"italic"}}>Gathering</div>
+          <div style={{fontSize:32,fontWeight:300,color:C.white,letterSpacing:"0.1em",marginBottom:8,textTransform:"uppercase"}}>Gathering</div>
           <div style={{width:40,height:1,background:C.accent2,margin:"0 auto 16px"}}/>
           <p style={{color:"#64748b",fontSize:14,lineHeight:1.7,maxWidth:260,margin:"0 auto"}}>Listening to the city with your eyes, ears and instincts.</p>
         </div>
