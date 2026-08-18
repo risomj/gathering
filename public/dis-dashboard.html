@@ -13,9 +13,8 @@
     .login-card { background: #fff; border-radius: 12px; border: 0.5px solid #e0e0dc; padding: 2rem; width: 100%; max-width: 340px; text-align: center; }
     .login-card h1 { font-size: 17px; font-weight: 500; margin-bottom: 4px; }
     .login-card p { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
-    input[type=password], input[type=file] { width: 100%; padding: 10px 12px; border: 0.5px solid #ccc; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
-    input[type=password] { text-align: center; letter-spacing: 0.1em; }
-    input[type=password]:focus, input[type=file]:focus { outline: none; border-color: #185FA5; box-shadow: 0 0 0 2px #B5D4F4; }
+    input[type=password] { width: 100%; padding: 10px 12px; border: 0.5px solid #ccc; border-radius: 8px; font-size: 14px; margin-bottom: 10px; text-align: center; letter-spacing: 0.1em; }
+    input[type=password]:focus { outline: none; border-color: #185FA5; box-shadow: 0 0 0 2px #B5D4F4; }
     .btn { padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: background 0.15s; }
     .btn-primary { background: #185FA5; color: #fff; width: 100%; }
     .btn-primary:hover { background: #0C447C; }
@@ -25,8 +24,8 @@
     header { max-width: 960px; margin: 0 auto 1.25rem; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
     header h1 { font-size: 18px; font-weight: 500; }
     header p { font-size: 12px; color: #888; margin-top: 2px; }
-    .section { max-width: 960px; margin: 0 auto 1.5rem; }
-    .section-title { font-size: 11px; font-weight: 500; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 0.5px solid #e0e0dc; }
+    .section { max-width: 960px; margin: 0 auto 1.75rem; }
+    .section-title { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 0.5px solid #e0e0dc; }
     .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 12px; }
     .metric { background: #ebebea; border-radius: 8px; padding: 12px 14px; }
     .metric-label { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
@@ -39,19 +38,22 @@
     .chart-wrap { position: relative; height: 200px; }
     .chart-wrap.tall { height: 260px; }
     .bar-list { display: flex; flex-direction: column; gap: 8px; }
-    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-    .bar-row .bl { width: 130px; color: #555; flex-shrink: 0; font-size: 11px; line-height: 1.3; }
+    .bar-row { display: flex; align-items: center; gap: 8px; }
+    .bar-row .bl { width: 140px; color: #555; flex-shrink: 0; font-size: 11px; line-height: 1.3; }
     .bar-row .bw { flex: 1; background: #f0f0ee; border-radius: 4px; height: 18px; overflow: hidden; }
     .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
-    .bar-row .bv { width: 36px; text-align: right; color: #888; font-size: 11px; flex-shrink: 0; }
+    .bar-row .bv { width: 40px; text-align: right; color: #888; font-size: 11px; flex-shrink: 0; }
     .delta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .delta-item { background: #f8f8f6; border-radius: 8px; padding: 10px 12px; }
     .delta-label { font-size: 11px; color: #666; margin-bottom: 6px; line-height: 1.3; }
     .delta-bar-wrap { background: #e8e8e5; border-radius: 4px; height: 8px; margin-bottom: 4px; }
     .delta-bar { height: 100%; border-radius: 4px; background: #1D9E75; }
     .delta-val { font-size: 12px; color: #0F6E56; font-weight: 500; }
-    .upload-zone { border: 1.5px dashed #ccc; border-radius: 8px; padding: 1.5rem; text-align: center; margin-bottom: 1rem; }
-    .upload-zone p { font-size: 13px; color: #888; margin-bottom: 8px; }
+    .attitudinal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .att-card { background: #f8f8f6; border-radius: 8px; padding: 12px 14px; }
+    .att-label { font-size: 11px; color: #666; margin-bottom: 8px; line-height: 1.4; }
+    .att-pct { font-size: 26px; font-weight: 500; color: #185FA5; }
+    .att-sub { font-size: 11px; color: #888; }
     #dashboard { display: none; }
   </style>
 </head>
@@ -76,31 +78,47 @@
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         <label style="font-size:13px;color:#185FA5;cursor:pointer;border:0.5px solid #ccc;border-radius:8px;padding:8px 14px;background:#fff;">
-          Load new CSV <input type="file" accept=".csv" id="csv-upload" style="display:none" onchange="handleFile(this)" />
+          Load CSV <input type="file" accept=".csv" id="csv-upload" style="display:none" onchange="handleFile(this)" />
         </label>
         <button class="btn btn-outline" onclick="logout()">Log out</button>
       </div>
     </header>
 
-    <!-- COHORT -->
+    <!-- 1. COHORT PROFILE -->
     <div class="section">
-      <div class="section-title">Cohort overview</div>
+      <div class="section-title">1 — Who are the students?</div>
       <div class="metrics" id="cohort-metrics"></div>
-      <div class="grid2">
+      <div class="grid2" style="margin-bottom:12px;">
         <div class="card">
-          <div class="card-title">Residence type</div>
+          <div class="card-title">Home university — urban context</div>
+          <div class="chart-wrap"><canvas id="urban-chart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Residence type at DIS</div>
           <div class="chart-wrap"><canvas id="residence-chart"></canvas></div>
         </div>
+      </div>
+      <div class="grid2" style="margin-bottom:12px;">
         <div class="card">
           <div class="card-title">Copenhagen neighbourhood</div>
           <div class="bar-list" id="neighbourhood-bars"></div>
         </div>
+        <div class="card">
+          <div class="card-title">Trips planned this semester</div>
+          <div class="chart-wrap"><canvas id="trips-chart"></canvas></div>
+        </div>
       </div>
     </div>
 
-    <!-- WELLBEING -->
+    <!-- 2. ATTITUDINAL BASELINE -->
     <div class="section">
-      <div class="section-title">Wellbeing — WHO-5</div>
+      <div class="section-title">2 — Attitudinal baseline (on arrival)</div>
+      <div class="attitudinal-grid" id="attitudinal-grid"></div>
+    </div>
+
+    <!-- 3. WELLBEING -->
+    <div class="section">
+      <div class="section-title">3 — Wellbeing (WHO-5)</div>
       <div class="metrics" id="wb-metrics"></div>
       <div class="card">
         <div class="card-title">WHO-5 dimensions (avg score, 1–5)</div>
@@ -108,11 +126,11 @@
       </div>
     </div>
 
-    <!-- SDT -->
+    <!-- 4. SDT -->
     <div class="section">
-      <div class="section-title">Self-Determination Theory</div>
+      <div class="section-title">4 — Self-Determination Theory</div>
       <div class="metrics" id="sdt-metrics"></div>
-      <div class="grid3" id="sdt-grid">
+      <div class="grid3">
         <div class="card">
           <div class="card-title">Autonomy</div>
           <div class="bar-list" id="autonomy-bars"></div>
@@ -128,18 +146,18 @@
       </div>
     </div>
 
-    <!-- BELONGING -->
+    <!-- 5. BELONGING -->
     <div class="section">
-      <div class="section-title">Belonging & city</div>
+      <div class="section-title">5 — Belonging & city</div>
       <div class="card">
-        <div class="card-title">Key belonging indicators (% agree / strongly agree)</div>
+        <div class="card-title">Key belonging indicators (% agree or strongly agree)</div>
         <div class="bar-list" id="belonging-bars"></div>
       </div>
     </div>
 
-    <!-- DELTA -->
+    <!-- 6. DELTA -->
     <div class="section">
-      <div class="section-title">Before → after shifts</div>
+      <div class="section-title">6 — Before → after shifts</div>
       <div class="card">
         <div class="card-title">% reporting improvement across key dimensions</div>
         <div class="delta-grid" id="delta-grid"></div>
@@ -153,11 +171,39 @@
 let charts = {};
 let data = [];
 
+// Urban classification by zip prefix / known codes
+const urbanMap = {
+  // Urban — major cities
+  '20016':'Urban','20':' Urban','02120':'Urban','02130':'Urban','02453':'Suburban',
+  '10':'Urban','11':'Urban','98416':'Urban','98105':'Urban','98101':'Urban',
+  '94':'Urban','90':'Urban','91504':'Suburban','60':'Urban','63105':'Urban',
+  '30':'Urban','19104':'Urban','19422':'Suburban','22':'Urban',
+  '55455':'Urban','55':'Urban','48':'Urban','45':'Urban','44074':'Suburban',
+  '77':'Urban','73':'Urban','80':'Urban','85':'Urban','89':'Urban',
+  // Suburban / college town
+  '47406':'College town','47':'College town','66045':'College town','66':'College town',
+  '27244':'College town','53706':'College town','53':'College town',
+  '63130':'Suburban','44':'Suburban','01060':'College town','01':'Suburban',
+  '03824':'College town','03':'College town',
+};
+
+function classifyZip(zip) {
+  if (!zip) return 'Unknown';
+  const z = String(zip).trim().padStart(5,'0');
+  if (urbanMap[z]) return urbanMap[z];
+  // prefix matching
+  const pre2 = z.slice(0,2), pre1 = z.slice(0,1);
+  const urbanPre2 = ['10','11','20','02','94','90','60','30','22','55','48','45','77','73','80','85','89','98'];
+  const collegePre = ['47','66','53','01','03','27'];
+  if (urbanPre2.includes(pre2)) return 'Urban';
+  if (collegePre.includes(pre2)) return 'College town';
+  return 'Suburban / small city';
+}
+
 window.login = function() {
   if (document.getElementById('pw').value === 'DisFaculty') {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
-    showUploadPrompt();
   } else {
     document.getElementById('login-err').textContent = 'Incorrect password';
   }
@@ -170,32 +216,22 @@ window.logout = function() {
   data = [];
 }
 
-function showUploadPrompt() {
-  document.getElementById('cohort-metrics').innerHTML = `
-    <div style="grid-column:1/-1;text-align:center;padding:2rem;">
-      <p style="font-size:13px;color:#888;margin-bottom:12px;">Upload the survey CSV to load data</p>
-      <label style="font-size:14px;color:#185FA5;cursor:pointer;border:0.5px solid #185FA5;border-radius:8px;padding:10px 20px;">
-        Choose CSV file <input type="file" accept=".csv" style="display:none" onchange="handleFile(this)" />
-      </label>
-    </div>`;
-}
-
 window.handleFile = function(input) {
   const file = input.files[0];
   if (!file) return;
-  Papa.parse(file, {
-    header: true,
-    skipEmptyLines: true,
+  Papa.parse(file, { header: true, skipEmptyLines: true, encoding: 'UTF-8',
     complete: res => { data = res.data; render(); }
   });
 }
 
+function col(row, key) { return row[key]?.trim() || ''; }
+
 function likertVal(v) {
   const map = {
-    'Strongly agree': 5, 'Agree': 4, 'Neither agree nor disagree': 3,
-    'Disagree': 2, 'Strongly disagree': 1,
-    'All of the time': 5, 'Most of the time': 4, 'More than half the time': 3,
-    'Less than half the time': 2, 'Some of the time': 1, 'At no time': 0
+    'Strongly agree':5,'Agree':4,'Neither agree nor disagree':3,'Neutral':3,
+    'Disagree':2,'Strongly disagree':1,
+    'All of the time':5,'Most of the time':4,'More than half the time':3,
+    'Less than half the time':2,'Some of the time':1,'At no time':0
   };
   return map[v?.trim()] ?? null;
 }
@@ -205,25 +241,31 @@ function avg(arr) {
   return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
 }
 
-function pctAgree(col) {
-  const vals = data.map(r => likertVal(r[col])).filter(v => v !== null);
-  const agree = vals.filter(v => v >= 4).length;
-  return vals.length ? Math.round(agree/vals.length*100) : 0;
+function pctAgree(colKey) {
+  const vals = data.map(r => likertVal(r[colKey])).filter(v => v !== null);
+  return vals.length ? Math.round(vals.filter(v=>v>=4).length/vals.length*100) : 0;
 }
 
 function mkChart(id, config) {
   if (charts[id]) charts[id].destroy();
-  charts[id] = new Chart(document.getElementById(id).getContext('2d'), config);
+  const el = document.getElementById(id);
+  if (!el) return;
+  charts[id] = new Chart(el.getContext('2d'), config);
 }
 
 function barList(el, items, color='#185FA5') {
+  if (!el) return;
   const max = Math.max(...items.map(i=>i.v), 1);
   el.innerHTML = items.map(i => `
     <div class="bar-row">
       <span class="bl">${i.label}</span>
       <div class="bw"><div class="bar-fill" style="width:${Math.round(i.v/max*100)}%;background:${color}"></div></div>
-      <span class="bv">${typeof i.v === 'number' && i.v % 1 !== 0 ? i.v.toFixed(2) : i.v}${i.suffix||''}</span>
+      <span class="bv">${typeof i.v==='number'&&i.v%1!==0?i.v.toFixed(2):i.v}${i.suffix||''}</span>
     </div>`).join('');
+}
+
+function counts(arr) {
+  return arr.reduce((o,v)=>{ o[v]=(o[v]||0)+1; return o; }, {});
 }
 
 function render() {
@@ -231,107 +273,165 @@ function render() {
   document.getElementById('cohort-sub').textContent = `Spring 2026 · ${n} respondents`;
 
   // COHORT METRICS
-  const intl = data.filter(r => r['Have you traveled outside of your home country before coming to DIS?'] === 'Yes').length;
+  const intl = data.filter(r => col(r,'Have you traveled outside of your home country before coming to DIS?') === 'Yes').length;
+  const urbanCounts = counts(data.map(r => classifyZip(r['Home university zip code:'])));
+  const urbanPct = Math.round(((urbanCounts['Urban']||0)/n)*100);
+
   document.getElementById('cohort-metrics').innerHTML = `
     <div class="metric"><div class="metric-label">Students</div><div class="metric-value">${n}</div><div class="metric-sub">respondents</div></div>
-    <div class="metric"><div class="metric-label">Prior intl travel</div><div class="metric-value">${Math.round(intl/n*100)}%</div><div class="metric-sub">traveled before DIS</div></div>
-    <div class="metric"><div class="metric-label">Avg trips planned</div><div class="metric-value">${(()=>{ const v=data.map(r=>({'0':0,'1-2':1.5,'3-5':4,'6+':6})[r['Indicate approximate number of personal trips taken already or planned later in the semester outside of Denmark:']]).filter(x=>x!==undefined); return v.length?avg(v).toFixed(1):'—';})()}</div><div class="metric-sub">this semester</div></div>`;
+    <div class="metric"><div class="metric-label">Urban background</div><div class="metric-value">${urbanPct}%</div><div class="metric-sub">from major cities</div></div>
+    <div class="metric"><div class="metric-label">Prior intl travel</div><div class="metric-value">${Math.round(intl/n*100)}%</div><div class="metric-sub">traveled before DIS</div></div>`;
+
+  // URBAN CHART
+  mkChart('urban-chart', {
+    type: 'doughnut',
+    data: { labels: Object.keys(urbanCounts), datasets: [{ data: Object.values(urbanCounts), backgroundColor: ['#185FA5','#1D9E75','#E8A838','#D4537E'], borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font:{size:11}, boxWidth:10 } } } }
+  });
 
   // RESIDENCE CHART
-  const residenceCounts = {};
-  data.forEach(r => { const v = r['Residence type at DIS']?.trim()||'Unknown'; residenceCounts[v]=(residenceCounts[v]||0)+1; });
+  const resCounts = counts(data.map(r => col(r,'Residence type at DIS')||'Unknown'));
   mkChart('residence-chart', {
     type: 'doughnut',
-    data: { labels: Object.keys(residenceCounts), datasets: [{ data: Object.values(residenceCounts), backgroundColor: ['#185FA5','#D4537E','#1D9E75','#E8A838','#9B6BCC'], borderWidth: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 10 } } } }
+    data: { labels: Object.keys(resCounts), datasets: [{ data: Object.values(resCounts), backgroundColor: ['#185FA5','#D4537E','#1D9E75','#E8A838','#9B6BCC'], borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font:{size:11}, boxWidth:10 } } } }
   });
 
   // NEIGHBOURHOOD
-  const nCounts = {};
-  data.forEach(r => { const v = r['Neighborhood of DIS residence in Copenhagen:\n']?.trim()||'Unknown'; nCounts[v]=(nCounts[v]||0)+1; });
+  const nKey = 'Neighborhood of DIS residence in Copenhagen:\n';
+  const nCounts = counts(data.map(r => col(r,nKey)||'Unknown'));
   barList(document.getElementById('neighbourhood-bars'),
     Object.entries(nCounts).sort((a,b)=>b[1]-a[1]).map(([label,v])=>({label,v})));
 
-  // WHO-5
-  const who5cols = [
-    ['Cheerful & good spirits', 'Over the last two weeks, how often have you felt the following?.I have felt cheerful and in good spirits'],
-    ['Calm & relaxed', 'Over the last two weeks, how often have you felt the following?.I have felt calm and relaxed'],
-    ['Active & vigorous', 'Over the last two weeks, how often have you felt the following?.I have felt active and vigorous'],
-    ['Fresh & rested', 'Over the last two weeks, how often have you felt the following?.I woke up feeling fresh and rested'],
-    ['Life is interesting', 'Over the last two weeks, how often have you felt the following?.My daily life has been filled with things that interest me'],
-  ];
-  const who5avgs = who5cols.map(([label,col]) => ({ label, v: avg(data.map(r=>likertVal(r[col]))) }));
-  const overallWho5 = avg(who5avgs.map(x=>x.v));
-  document.getElementById('wb-metrics').innerHTML = `
-    <div class="metric"><div class="metric-label">WHO-5 avg</div><div class="metric-value">${overallWho5?.toFixed(2)||'—'}</div><div class="metric-sub">out of 5</div></div>
-    ${who5avgs.map(x=>`<div class="metric"><div class="metric-label">${x.label}</div><div class="metric-value">${x.v?.toFixed(2)||'—'}</div><div class="metric-sub">avg score</div></div>`).join('')}`;
-  mkChart('who5-chart', {
+  // TRIPS
+  const tripCounts = counts(data.map(r => col(r,'Indicate approximate number of personal trips taken already or planned later in the semester outside of Denmark:')||'Not stated'));
+  const tripOrder = ['0','1-2','3-4','3-5','5-7','6+','7+','Not stated'];
+  const tripLabels = Object.keys(tripCounts).sort((a,b)=>tripOrder.indexOf(a)-tripOrder.indexOf(b));
+  mkChart('trips-chart', {
     type: 'bar',
-    data: { labels: who5avgs.map(x=>x.label), datasets: [{ data: who5avgs.map(x=>x.v?.toFixed(2)), backgroundColor: '#185FA5', borderRadius: 4 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 5, ticks: { font: { size: 11 }, color: '#888' }, grid: { color: '#f0f0ee' } }, x: { ticks: { font: { size: 11 }, color: '#888' }, grid: { display: false } } } }
+    data: { labels: tripLabels, datasets: [{ data: tripLabels.map(l=>tripCounts[l]||0), backgroundColor: '#185FA5', borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true,ticks:{font:{size:11},color:'#888'},grid:{color:'#f0f0ee'}}, x:{ticks:{font:{size:11},color:'#888'},grid:{display:false}} } }
   });
 
-  // SDT
+  // ATTITUDINAL BASELINE
+  const attItems = [
+    { label: 'Optimistic about my future', col: ' Please indicate how much you agree or disagree with the following statements:\n.I am optimistic about my future ' },
+    { label: 'Cities are fundamentally safe places', col: ' Please indicate how much you agree or disagree with the following statements:\n.I believe cities are fundamentally safe places' },
+    { label: 'Enjoy city life & being around strangers', col: ' Please indicate how much you agree or disagree with the following statements:\n.I enjoy city life and being around people I don\'t know' },
+  ];
+  document.getElementById('attitudinal-grid').innerHTML = attItems.map(item => {
+    const pct = pctAgree(item.col);
+    // fallback: try alternate key formats
+    const vals = data.map(r => {
+      const keys = Object.keys(r);
+      const match = keys.find(k => k.includes('optimistic about my future') || k.includes('fundamentally safe') || k.includes('enjoy city life'));
+      return null;
+    });
+    return `<div class="att-card">
+      <div class="att-label">${item.label}</div>
+      <div class="att-pct">${pct}%</div>
+      <div class="att-sub">agree or strongly agree</div>
+    </div>`;
+  }).join('');
+
+  // Recompute attitudinal with flexible key matching
+  const attKeys = {
+    optimistic: data.length ? Object.keys(data[0]).find(k=>k.toLowerCase().includes('optimistic about my future')) : null,
+    safe: data.length ? Object.keys(data[0]).find(k=>k.toLowerCase().includes('fundamentally safe')) : null,
+    citylife: data.length ? Object.keys(data[0]).find(k=>k.toLowerCase().includes('enjoy city life')) : null,
+  };
+  const attLabels = ['Optimistic about my future','Cities are fundamentally safe','Enjoy city life & strangers'];
+  const attColKeys = [attKeys.optimistic, attKeys.safe, attKeys.citylife];
+  document.getElementById('attitudinal-grid').innerHTML = attLabels.map((label,i) => {
+    const pct = attColKeys[i] ? pctAgree(attColKeys[i]) : '—';
+    return `<div class="att-card">
+      <div class="att-label">${label}</div>
+      <div class="att-pct">${pct}${typeof pct==='number'?'%':''}</div>
+      <div class="att-sub">agree or strongly agree</div>
+    </div>`;
+  }).join('');
+
+  // WHO-5
+  const who5cols = [
+    ['Cheerful & good spirits', data.length ? Object.keys(data[0]).find(k=>k.includes('cheerful and in good spirits')) : null],
+    ['Calm & relaxed', data.length ? Object.keys(data[0]).find(k=>k.includes('calm and relaxed')) : null],
+    ['Active & vigorous', data.length ? Object.keys(data[0]).find(k=>k.includes('active and vigorous')) : null],
+    ['Fresh & rested', data.length ? Object.keys(data[0]).find(k=>k.includes('fresh and rested')) : null],
+    ['Life is interesting', data.length ? Object.keys(data[0]).find(k=>k.includes('things that interest me')) : null],
+  ];
+  const who5avgs = who5cols.map(([label,k]) => ({ label, v: k ? avg(data.map(r=>likertVal(r[k]))) : null }));
+  const overallWho5 = avg(who5avgs.map(x=>x.v).filter(Boolean));
+  document.getElementById('wb-metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">WHO-5 avg</div><div class="metric-value">${overallWho5?.toFixed(2)||'—'}</div><div class="metric-sub">out of 5</div></div>
+    ${who5avgs.map(x=>`<div class="metric"><div class="metric-label">${x.label}</div><div class="metric-value">${x.v?.toFixed(2)||'—'}</div><div class="metric-sub">avg</div></div>`).join('')}`;
+  mkChart('who5-chart', {
+    type: 'bar',
+    data: { labels: who5avgs.map(x=>x.label), datasets:[{ data: who5avgs.map(x=>x.v?.toFixed(2)||0), backgroundColor:'#185FA5', borderRadius:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{min:0,max:5,ticks:{font:{size:11},color:'#888'},grid:{color:'#f0f0ee'}}, x:{ticks:{font:{size:11},color:'#888'},grid:{display:false}} } }
+  });
+
+  // SDT — flexible key matching
+  function findKey(fragment) { return data.length ? Object.keys(data[0]).find(k=>k.toLowerCase().includes(fragment.toLowerCase())) : null; }
   const autonomyCols = [
-    ['Free to make choices', 'Please indicate how much you agree or disagree with the following statements:.I feel free to make choices about how I live my daily life '],
-    ['Express true opinions', 'Please indicate how much you agree or disagree with the following statements:.I feel I can express my true opinions '],
-    ['Influence surroundings', 'Please indicate how much you agree or disagree with the following statements:.I feel I can influence my surroundings '],
-    ['Actions matter', 'Please indicate how much you agree or disagree with the following statements:.I feel that my actions matter '],
-    ['Encouraged to take initiative', 'Please indicate how much you agree or disagree with the following statements:.I feel encouraged to take initiative '],
+    ['Free to make choices', findKey('free to make choices about how I live')],
+    ['Express true opinions', findKey('express my true opinions')],
+    ['Influence surroundings', findKey('influence my surroundings')],
+    ['Actions matter', findKey('my actions matter')],
+    ['Encouraged to take initiative', findKey('encouraged to take initiative')],
   ];
   const competenceCols = [
-    ['Handle challenges', 'Please indicate how much you agree or disagree with the following statements:.I feel capable of handling the challenges I face '],
-    ['Growing as a person', 'Please indicate how much you agree or disagree with the following statements:.I feel that I am growing as a person '],
-    ['Navigate CPH independently', 'Please indicate how much you agree or disagree with the following statements:.I feel confident and capable of independently navigating life in Copenhagen outside of DIS  '],
-    ['Apply learning in daily life', 'Please indicate how much you agree or disagree with the following statements:.I have opportunities to apply what I learn in the classroom in everyday life '],
-    ['Contribute to society', 'Please indicate how much you agree or disagree with the following statements:.I see ways I can contribute positively to society '],
+    ['Handle challenges', findKey('capable of handling the challenges')],
+    ['Growing as a person', findKey('growing as a person')],
+    ['Navigate CPH independently', findKey('independently navigating life in Copenhagen')],
+    ['Apply learning in daily life', findKey('apply what I learn in the classroom')],
+    ['Contribute to society', findKey('contribute positively to society')],
   ];
   const relatednessCols = [
-    ['Close to people around me', 'Please indicate how much you agree or disagree with the following statements:.I feel close to people around me '],
-    ['I matter to others', 'Please indicate how much you agree or disagree with the following statements:.I feel that I matter to others '],
-    ['Someone to talk to', 'Please indicate how much you agree or disagree with the following statements:.I have at least one person I can talk to about personal matters '],
-    ['Comfortable with strangers', ' Please indicate how much you agree or disagree with the following statements:.I feel comfortable interacting with people I do not know well '],
-    ['Fit in in neighbourhood', ' Please indicate how much you agree or disagree with the following statements:.I feel like I fit in in my neighborhood '],
+    ['Close to people around me', findKey('close to people around me')],
+    ['I matter to others', findKey('I matter to others')],
+    ['Someone to talk to', findKey('at least one person I can talk to')],
+    ['Comfortable with strangers', findKey('comfortable interacting with people I do not know well')],
+    ['Fit in in neighbourhood', findKey('fit in in my neighborhood')],
   ];
 
-  function sdtAvg(cols) { return avg(cols.map(([,col]) => avg(data.map(r=>likertVal(r[col]))))); }
-  const aAvg = sdtAvg(autonomyCols), cAvg = sdtAvg(competenceCols), rAvg = sdtAvg(relatednessCols);
+  function sdtAvg(cols) { return avg(cols.map(([,k])=> k ? avg(data.map(r=>likertVal(r[k]))) : null).filter(Boolean)); }
+  const aAvg=sdtAvg(autonomyCols), cAvg=sdtAvg(competenceCols), rAvg=sdtAvg(relatednessCols);
   document.getElementById('sdt-metrics').innerHTML = `
     <div class="metric"><div class="metric-label">Autonomy avg</div><div class="metric-value" style="color:#185FA5">${aAvg?.toFixed(2)||'—'}</div><div class="metric-sub">out of 5</div></div>
     <div class="metric"><div class="metric-label">Competence avg</div><div class="metric-value" style="color:#1D9E75">${cAvg?.toFixed(2)||'—'}</div><div class="metric-sub">out of 5</div></div>
     <div class="metric"><div class="metric-label">Relatedness avg</div><div class="metric-value" style="color:#D4537E">${rAvg?.toFixed(2)||'—'}</div><div class="metric-sub">out of 5</div></div>`;
 
-  barList(document.getElementById('autonomy-bars'), autonomyCols.map(([label,col])=>({label,v:avg(data.map(r=>likertVal(r[col])))||0})), '#185FA5');
-  barList(document.getElementById('competence-bars'), competenceCols.map(([label,col])=>({label,v:avg(data.map(r=>likertVal(r[col])))||0})), '#1D9E75');
-  barList(document.getElementById('relatedness-bars'), relatednessCols.map(([label,col])=>({label,v:avg(data.map(r=>likertVal(r[col])))||0})), '#D4537E');
+  barList(document.getElementById('autonomy-bars'), autonomyCols.map(([l,k])=>({label:l,v:k?avg(data.map(r=>likertVal(r[k])))||0:0})),'#185FA5');
+  barList(document.getElementById('competence-bars'), competenceCols.map(([l,k])=>({label:l,v:k?avg(data.map(r=>likertVal(r[k])))||0:0})),'#1D9E75');
+  barList(document.getElementById('relatedness-bars'), relatednessCols.map(([l,k])=>({label:l,v:k?avg(data.map(r=>likertVal(r[k])))||0:0})),'#D4537E');
 
   // BELONGING
   const belongingItems = [
-    ['Comfortable in neighbourhood', ' Please indicate how much you agree or disagree with the following statements:.I feel comfortable in the neighborhood where I live'],
-    ['Places in city where I belong', ' Please indicate how much you agree or disagree with the following statements:.There are places in the city where I feel I belong '],
-    ['Treated with dignity', ' Please indicate how much you agree or disagree with the following statements:.I feel treated with dignity as a young person in public spaces'],
-    ['Moments of joy in public space', ' Please indicate how much you agree or disagree with the following statements:.I experience moments of joy in public spaces'],
-    ['Safe walking/cycling at night', ' Please indicate how much you agree or disagree with the following statements:.I feel safe walking or cycling alone in the city at night'],
-    ['City supports my life', ' Please indicate how much you agree or disagree with the following statements:.I feel that this city supports the kind of life I want to live'],
-    ['Would feel sad to leave', ' Please indicate how much you agree or disagree with the following statements:.I would feel sad to leave this city'],
-    ['Involved in local group', ' Please indicate how much you agree or disagree with the following statements:.I am involved in at least one local group/club/team'],
+    ['Comfortable in neighbourhood', findKey('comfortable in the neighborhood where I live')],
+    ['Places in city where I belong', findKey('places in the city where I feel I belong')],
+    ['Treated with dignity', findKey('treated with dignity as a young person')],
+    ['Moments of joy in public space', findKey('moments of joy in public spaces')],
+    ['Safe walking/cycling at night', findKey('safe walking or cycling alone')],
+    ['City supports my life', findKey('city supports the kind of life I want')],
+    ['Would feel sad to leave', findKey('sad to leave this city')],
+    ['Involved in local group', findKey('involved in at least one local group')],
   ];
   barList(document.getElementById('belonging-bars'),
-    belongingItems.map(([label,col])=>({label,v:pctAgree(col),suffix:'%'})), '#E8A838');
+    belongingItems.map(([l,k])=>({label:l,v:k?pctAgree(k):0,suffix:'%'})),'#E8A838');
 
   // DELTA
   const deltaItems = [
-    ['More free to make choices', 'Please indicate how much you agree or disagree with the following statements:.I feel more free to make choices about my daily life'],
-    ['More capable of challenges', 'Please indicate how much you agree or disagree with the following statements:.I feel more capable of handling everyday challenges'],
-    ['More connected to people', 'Please indicate how much you agree or disagree with the following statements:.I feel more connected to people around me'],
-    ['Less anxious', 'Please indicate how much you agree or disagree with the following statements:.I feel less anxious'],
-    ['Belong more in the city', 'Please indicate how much you agree or disagree with the following statements:.I feel I belong more in the city'],
-    ['Changed how I think about home', 'Please indicate how much you agree or disagree with the following statement:.Living in Copenhagen has changed how I think about my university town'],
+    ['More free to make choices', findKey('more free to make choices about my daily life')],
+    ['More capable of challenges', findKey('more capable of handling everyday challenges')],
+    ['More connected to people', findKey('more connected to people around me')],
+    ['Less anxious', findKey('feel less anxious')],
+    ['Belong more in the city', findKey('belong more in the city')],
+    ['Changed how I think about home', findKey('changed how I think about my university town')],
   ];
-  document.getElementById('delta-grid').innerHTML = deltaItems.map(([label,col])=>{
-    const pct = pctAgree(col);
+  document.getElementById('delta-grid').innerHTML = deltaItems.map(([l,k])=>{
+    const pct = k ? pctAgree(k) : 0;
     return `<div class="delta-item">
-      <div class="delta-label">${label}</div>
+      <div class="delta-label">${l}</div>
       <div class="delta-bar-wrap"><div class="delta-bar" style="width:${pct}%"></div></div>
       <div class="delta-val">${pct}% agree</div>
     </div>`;
