@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIS Explore CPH — Faculty Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f3; min-height: 100vh; padding: 1rem; color: #111; }
+    .center { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-card { background: #fff; border-radius: 12px; border: 0.5px solid #e0e0dc; padding: 2rem; width: 100%; max-width: 340px; text-align: center; }
+    .login-card h1 { font-size: 17px; font-weight: 500; margin-bottom: 4px; }
+    .login-card p { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
+    input[type=password], input[type=file] { width: 100%; padding: 10px 12px; border: 0.5px solid #ccc; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
+    input[type=password] { text-align: center; letter-spacing: 0.1em; }
+    input[type=password]:focus, input[type=file]:focus { outline: none; border-color: #185FA5; box-shadow: 0 0 0 2px #B5D4F4; }
+    .btn { padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: background 0.15s; }
+    .btn-primary { background: #185FA5; color: #fff; width: 100%; }
+    .btn-primary:hover { background: #0C447C; }
+    .btn-outline { background: none; border: 0.5px solid #ccc; color: #666; }
+    .btn-outline:hover { background: #f0f0ee; }
+    .err { color: #A32D2D; font-size: 12px; margin-top: 8px; }
+    header { max-width: 960px; margin: 0 auto 1.25rem; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    header h1 { font-size: 18px; font-weight: 500; }
+    header p { font-size: 12px; color: #888; margin-top: 2px; }
+    .section { max-width: 960px; margin: 0 auto 1.5rem; }
+    .section-title { font-size: 11px; font-weight: 500; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 0.5px solid #e0e0dc; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .metric { background: #ebebea; border-radius: 8px; padding: 12px 14px; }
+    .metric-label { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .metric-value { font-size: 24px; font-weight: 500; }
+    .metric-sub { font-size: 11px; color: #888; margin-top: 2px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .card { background: #fff; border-radius: 12px; border: 0.5px solid #e0e0dc; padding: 16px; }
+    .card-title { font-size: 12px; font-weight: 500; color: #666; margin-bottom: 12px; }
+    .chart-wrap { position: relative; height: 200px; }
+    .chart-wrap.tall { height: 260px; }
+    .bar-list { display: flex; flex-direction: column; gap: 8px; }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .bar-row .bl { width: 130px; color: #555; flex-shrink: 0; font-size: 11px; line-height: 1.3; }
+    .bar-row .bw { flex: 1; background: #f0f0ee; border-radius: 4px; height: 18px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+    .bar-row .bv { width: 36px; text-align: right; color: #888; font-size: 11px; flex-shrink: 0; }
+    .delta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .delta-item { background: #f8f8f6; border-radius: 8px; padding: 10px 12px; }
+    .delta-label { font-size: 11px; color: #666; margin-bottom: 6px; line-height: 1.3; }
+    .delta-bar-wrap { background: #e8e8e5; border-radius: 4px; height: 8px; margin-bottom: 4px; }
+    .delta-bar { height: 100%; border-radius: 4px; background: #1D9E75; }
+    .delta-val { font-size: 12px; color: #0F6E56; font-weight: 500; }
+    .upload-zone { border: 1.5px dashed #ccc; border-radius: 8px; padding: 1.5rem; text-align: center; margin-bottom: 1rem; }
+    .upload-zone p { font-size: 13px; color: #888; margin-bottom: 8px; }
+    #dashboard { display: none; }
+  </style>
+</head>
+<body>
+
+<div id="login-screen" class="center">
+  <div class="login-card">
+    <h1>DIS Explore CPH</h1>
+    <p>Faculty Dashboard — Spring 2026</p>
+    <input type="password" id="pw" placeholder="Password" onkeydown="if(event.key==='Enter')login()" />
+    <button class="btn btn-primary" onclick="login()">Continue</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <div style="max-width:960px;margin:0 auto;">
+    <header>
+      <div>
+        <h1>DIS Explore CPH — Student Overview</h1>
+        <p id="cohort-sub">Spring 2026 cohort</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label style="font-size:13px;color:#185FA5;cursor:pointer;border:0.5px solid #ccc;border-radius:8px;padding:8px 14px;background:#fff;">
+          Load new CSV <input type="file" accept=".csv" id="csv-upload" style="display:none" onchange="handleFile(this)" />
+        </label>
+        <button class="btn btn-outline" onclick="logout()">Log out</button>
+      </div>
+    </header>
+
+    <!-- COHORT -->
+    <div class="section">
+      <div class="section-title">Cohort overview</div>
+      <div class="metrics" id="cohort-metrics"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Residence type</div>
+          <div class="chart-wrap"><canvas id="residence-chart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Copenhagen neighbourhood</div>
+          <div class="bar-list" id="neighbourhood-bars"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WELLBEING -->
+    <div class="section">
+      <div class="section-title">Wellbeing — WHO-5</div>
+      <div class="metrics" id="wb-metrics"></div>
+      <div class="card">
+        <div class="card-title">WHO-5 dimensions (avg score, 1–5)</div>
+        <div class="chart-wrap tall"><canvas id="who5-chart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- SDT -->
+    <div class="section">
+      <div class="section-title">Self-Determination Theory</div>
+      <div class="metrics" id="sdt-metrics"></div>
+      <div class="grid3" id="sdt-grid">
+        <div class="card">
+          <div class="card-title">Autonomy</div>
+          <div class="bar-list" id="autonomy-bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Competence</div>
+          <div class="bar-list" id="competence-bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Relatedness</div>
+          <div class="bar-list" id="relatedness-bars"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BELONGING -->
+    <div class="section">
+      <div class="section-title">Belonging & city</div>
+      <div class="card">
+        <div class="card-title">Key belonging indicators (% agree / strongly agree)</div>
+        <div class="bar-list" id="belonging-bars"></div>
+      </div>
+    </div>
+
+    <!-- DELTA -->
+    <div class="section">
+      <div class="section-title">Before → after shifts</div>
+      <div class="card">
+        <div class="card-title">% reporting improvement across key dimensions</div>
+        <div class="delta-grid" id="delta-grid"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let charts = {};
+let data = [];
+
+window.login = function() {
+  if (document.getElementById('pw').value === 'DisFaculty') {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    showUploadPrompt();
+  } else {
+    document.getElementById('login-err').textContent = 'Incorrect password';
+  }
+}
+
+window.logout = function() {
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pw').value = '';
+  data = [];
+}
+
+function showUploadPrompt() {
+  document.getElementById('cohort-metrics').innerHTML = `
+    <div style="grid-column:1/-1;text-align:center;padding:2rem;">
+      <p style="font-size:13px;color:#888;margin-bottom:12px;">Upload the survey CSV to load data</p>
+      <label style="font-size:14px;color:#185FA5;cursor:pointer;border:0.5px solid #185FA5;border-radius:8px;padding:10px 20px;">
+        Choose CSV file <input type="file" accept=".csv" style="display:none" onchange="handleFile(this)" />
+      </label>
+    </div>`;
+}
+
+window.handleFile = function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: res => { data = res.data; render(); }
+  });
+}
+
+function likertVal(v) {
+  const map = {
+    'Strongly agree': 5, 'Agree': 4, 'Neither agree nor disagree': 3,
+    'Disagree': 2, 'Strongly disagree': 1,
+    'All of the time': 5, 'Most of the time': 4, 'More than half the time': 3,
+    'Less than half the time': 2, 'Some of the time': 1, 'At no time': 0
+  };
+  return map[v?.trim()] ?? null;
+}
+
+function avg(arr) {
+  const v = arr.filter(x => x !== null && !isNaN(x));
+  return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
+}
+
+function pctAgree(col) {
+  const vals = data.map(r => likertVal(r[col])).filter(v => v !== null);
+  const agree = vals.filter(v => v >= 4).length;
+  return vals.length ? Math.round(agree/vals.length*100) : 0;
+}
+
+function mkChart(id, config) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id).getContext('2d'), config);
+}
+
+function barList(el, items, color='#185FA5') {
+  const max = Math.max(...items.map(i=>i.v), 1);
+  el.innerHTML = items.map(i => `
+    <div class="bar-row">
+      <span class="bl">${i.label}</span>
+      <div class="bw"><div class="bar-fill" style="width:${Math.round(i.v/max*100)}%;background:${color}"></div></div>
+      <span class="bv">${typeof i.v === 'number' && i.v % 1 !== 0 ? i.v.toFixed(2) : i.v}${i.suffix||''}</span>
+    </div>`).join('');
+}
+
+function render() {
+  const n = data.length;
+  document.getElementById('cohort-sub').textContent = `Spring 2026 · ${n} respondents`;
+
+  // COHORT METRICS
+  const intl = data.filter(r => r['Have you traveled outside of your home country before coming to DIS?'] === 'Yes').length;
+  document.getElementById('cohort-metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Students</div><div class="metric-value">${n}</div><div class="metric-sub">respondents</div></div>
+    <div class="metric"><div class="metric-label">Prior intl travel</div><div class="metric-value">${Math.round(intl/n*100)}%</div><div class="metric-sub">traveled before DIS</div></div>
+    <div class="metric"><div class="metric-label">Avg trips planned</div><div class="metric-value">${(()=>{ const v=data.map(r=>({'0':0,'1-2':1.5,'3-5':4,'6+':6})[r['Indicate approximate number of personal trips taken already or planned later in the semester outside of Denmark:']]).filter(x=>x!==undefined); return v.length?avg(v).toFixed(1):'—';})()}</div><div class="metric-sub">this semester</div></div>`;
+
+  // RESIDENCE CHART
+  const residenceCounts = {};
+  data.forEach(r => { const v = r['Residence type at DIS']?.trim()||'Unknown'; residenceCounts[v]=(residenceCounts[v]||0)+1; });
+  mkChart('residence-chart', {
+    type: 'doughnut',
+    data: { labels: Object.keys(residenceCounts), datasets: [{ data: Object.values(residenceCounts), backgroundColor: ['#185FA5','#D4537E','#1D9E75','#E8A838','#9B6BCC'], borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 10 } } } }
+  });
+
+  // NEIGHBOURHOOD
+  const nCounts = {};
+  data.forEach(r => { const v = r['Neighborhood of DIS residence in Copenhagen:\n']?.trim()||'Unknown'; nCounts[v]=(nCounts[v]||0)+1; });
+  barList(document.getElementById('neighbourhood-bars'),
+    Object.entries(nCounts).sort((a,b)=>b[1]-a[1]).map(([label,v])=>({label,v})));
+
+  // WHO-5
+  const who5cols = [
+    ['Cheerful & good spirits', 'Over the last two weeks, how often have you felt the following?.I have felt cheerful and in good spirits'],
+    ['Calm & relaxed', 'Over the last two weeks, how often have you felt the following?.I have felt calm and relaxed'],
+    ['Active & vigorous', 'Over the last two weeks, how often have you felt the following?.I have felt active and vigorous'],
+    ['Fresh & rested', 'Over the last two weeks, how often have you felt the following?.I woke up feeling fresh and rested'],
+    ['Life is interesting', 'Over the last two weeks, how often have you felt the following?.My daily life has been filled with things that interest me'],
+  ];
+  const who5avgs = who5cols.map(([label,col]) => ({ label, v: avg(data.map(r=>likertVal(r[col]))) }));
+  const overallWho5 = avg(who5avgs.map(x=>x.v));
+  document.getElementById('wb-metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">WHO-5 avg</div><div class="metric-value">${overallWho5?.toFixed(2)||'—'}</div><div class="metric-sub">out of 5</div></div>
+    ${who5avgs.map(x=>`<div class="metric"><div class="metric-label">${x.label}</div><div class="metric-value">${x.v?.toFixed(2)||'—'}</div><div class="metric-sub">avg score</div></div>`).join('')}`;
+  mkChart('who5-chart', {
+    type: 'bar',
+    data: { labels: who5avgs.map(x=>x.label), datasets: [{ data: who5avgs.map(x=>x.v?.toFixed(2)), backgroundColor: '#185FA5', borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 5, ticks: { font: { size: 11 }, color: '#888' }, grid: { color: '#f0f0ee' } }, x: { ticks: { font: { size: 11 }, color: '#888' }, grid: { display: false } } } }
+  });
+
+  // SDT
+  const autonomyCols = [
+    ['Free to make choices', 'Please indicate how much you agree or disagree with the following statements:.I feel free to make choices about how I live my daily life '],
+    ['Express true opinions', 'Please indicate how much you agree or disagree with the following statements:.I feel I can express my true opinions '],
+    ['Influence surroundings', 'Please indicate how much you agree or disagree with the following statements:.I feel I can influence my surroundings '],
+    ['Actions matter', 'Please indicate how much you agree or disagree with the following statements:.I feel that my actions matter '],
+    ['Encouraged to take initiative', 'Please indicate how much you agree or disagree with the following statements:.I feel encouraged to take initiative '],
+  ];
+  const competenceCols = [
+    ['Handle challenges', 'Please indicate how much you agree or disagree with the following statements:.I feel capable of handling the challenges I face '],
+    ['Growing as a person', 'Please indicate how much you agree or disagree with the following statements:.I feel that I am growing as a person '],
+    ['Navigate CPH independently', 'Please indicate how much you agree or disagree with the following statements:.I feel confident and capable of independently navigating life in Copenhagen outside of DIS  '],
+    ['Apply learning in daily life', 'Please indicate how much you agree or disagree with the following statements:.I have opportunities to apply what I learn in the classroom in everyday life '],
+    ['Contribute to society', 'Please indicate how much you agree or disagree with the following statements:.I see ways I can contribute positively to society '],
+  ];
+  const relatednessCols = [
+    ['Close to people around me', 'Please indicate how much you agree or disagree with the following statements:.I feel close to people around me '],
+    ['I matter to others', 'Please indicate how much you agree or disagree with the following statements:.I feel that I matter to others '],
+    ['Someone to talk to', 'Please indicate how much you agree or disagree with the following statements:.I have at least one person I can talk to about personal matters '],
+    ['Comfortable with strangers', ' Please indicate how much you agree or disagree with the following statements:.I feel comfortable interacting with people I do not know well '],
+    ['Fit in in neighbourhood', ' Please indicate how much you agree or disagree with the following statements:.I feel like I fit in in my neighborhood '],
+  ];
+
+  function sdtAvg(cols) { return avg(cols.map(([,col]) => avg(data.map(r=>likertVal(r[col]))))); }
+  const aAvg = sdtAvg(autonomyCols), cAvg = sdtAvg(competenceCols), rAvg = sdtAvg(relatednessCols);
+  document.getElementById('sdt-metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Autonomy avg</div><div class="metric-value" style="color:#185FA5">${aAvg?.toFixed(2)||'—'}</div><div class="metric-sub">out of 5</div></div>
+    <div class="metric"><div class="metric-label">Competence avg</div><div class="metric-value" style="color:#1D9E75">${cAvg?.toFixed(2)||'—'}</div><div class="metric-sub">out of 5</div></div>
+    <div class="metric"><div class="metric-label">Relatedness avg</div><div class="metric-value" style="color:#D4537E">${rAvg?.toFixed(2)||'—'}</div><div class="metric-sub">out of 5</div></div>`;
+
+  barList(document.getElementById('autonomy-bars'), autonomyCols.map(([label,col])=>({label,v:avg(data.map(r=>likertVal(r[col])))||0})), '#185FA5');
+  barList(document.getElementById('competence-bars'), competenceCols.map(([label,col])=>({label,v:avg(data.map(r=>likertVal(r[col])))||0})), '#1D9E75');
+  barList(document.getElementById('relatedness-bars'), relatednessCols.map(([label,col])=>({label,v:avg(data.map(r=>likertVal(r[col])))||0})), '#D4537E');
+
+  // BELONGING
+  const belongingItems = [
+    ['Comfortable in neighbourhood', ' Please indicate how much you agree or disagree with the following statements:.I feel comfortable in the neighborhood where I live'],
+    ['Places in city where I belong', ' Please indicate how much you agree or disagree with the following statements:.There are places in the city where I feel I belong '],
+    ['Treated with dignity', ' Please indicate how much you agree or disagree with the following statements:.I feel treated with dignity as a young person in public spaces'],
+    ['Moments of joy in public space', ' Please indicate how much you agree or disagree with the following statements:.I experience moments of joy in public spaces'],
+    ['Safe walking/cycling at night', ' Please indicate how much you agree or disagree with the following statements:.I feel safe walking or cycling alone in the city at night'],
+    ['City supports my life', ' Please indicate how much you agree or disagree with the following statements:.I feel that this city supports the kind of life I want to live'],
+    ['Would feel sad to leave', ' Please indicate how much you agree or disagree with the following statements:.I would feel sad to leave this city'],
+    ['Involved in local group', ' Please indicate how much you agree or disagree with the following statements:.I am involved in at least one local group/club/team'],
+  ];
+  barList(document.getElementById('belonging-bars'),
+    belongingItems.map(([label,col])=>({label,v:pctAgree(col),suffix:'%'})), '#E8A838');
+
+  // DELTA
+  const deltaItems = [
+    ['More free to make choices', 'Please indicate how much you agree or disagree with the following statements:.I feel more free to make choices about my daily life'],
+    ['More capable of challenges', 'Please indicate how much you agree or disagree with the following statements:.I feel more capable of handling everyday challenges'],
+    ['More connected to people', 'Please indicate how much you agree or disagree with the following statements:.I feel more connected to people around me'],
+    ['Less anxious', 'Please indicate how much you agree or disagree with the following statements:.I feel less anxious'],
+    ['Belong more in the city', 'Please indicate how much you agree or disagree with the following statements:.I feel I belong more in the city'],
+    ['Changed how I think about home', 'Please indicate how much you agree or disagree with the following statement:.Living in Copenhagen has changed how I think about my university town'],
+  ];
+  document.getElementById('delta-grid').innerHTML = deltaItems.map(([label,col])=>{
+    const pct = pctAgree(col);
+    return `<div class="delta-item">
+      <div class="delta-label">${label}</div>
+      <div class="delta-bar-wrap"><div class="delta-bar" style="width:${pct}%"></div></div>
+      <div class="delta-val">${pct}% agree</div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
